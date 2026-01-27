@@ -10,7 +10,7 @@ import { useAuth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 import { LanguageToggle } from '@/components/LanguageToggle';
 
-type RoleType = 'traveler' | 'provider';
+type RoleType = 'traveler' | 'provider' | 'vendor';
 
 export default function SignupPage() {
   const { t, isRTL } = useLanguage();
@@ -83,7 +83,7 @@ export default function SignupPage() {
       description: t.auth.signupSuccess,
     });
 
-    navigate(selectedRole === 'provider' ? '/provider' : '/dashboard');
+    navigate(selectedRole === 'provider' ? '/provider' : selectedRole === 'vendor' ? '/vendor' : '/dashboard');
   };
 
   return (
@@ -150,6 +150,33 @@ export default function SignupPage() {
                     </div>
                   </div>
                 </button>
+
+                {/* Vendor Option */}
+                <button
+                  onClick={() => handleRoleSelect('vendor')}
+                  className="w-full p-4 border border-border rounded-xl hover:border-accent hover:bg-accent/5 transition-all text-start group"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center group-hover:bg-accent group-hover:text-accent-foreground transition-colors">
+                      <svg
+                        className="h-6 w-6"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                        <path d="M3 9h18M9 21V9" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold">{isRTL ? 'شركة خدمات' : 'Service Vendor'}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {isRTL ? 'إدارة وكالة السفر ومقدمي الخدمات' : 'Manage your travel agency and providers'}
+                      </p>
+                    </div>
+                  </div>
+                </button>
               </CardContent>
               <CardFooter className="flex justify-center">
                 <p className="text-sm text-muted-foreground">
@@ -174,7 +201,7 @@ export default function SignupPage() {
                   {t.auth.signup}
                 </CardTitle>
                 <CardDescription>
-                  {selectedRole === 'traveler' ? t.auth.travelerDesc : t.auth.providerDesc}
+                  {selectedRole === 'traveler' ? t.auth.travelerDesc : selectedRole === 'vendor' ? (isRTL ? 'إدارة وكالة السفر ومقدمي الخدمات' : 'Manage your travel agency and providers') : t.auth.providerDesc}
                 </CardDescription>
               </CardHeader>
               <form onSubmit={handleSubmit}>

@@ -1,16 +1,22 @@
 import { Link } from 'react-router-dom';
-import { Calendar, Users, FileText, ArrowRight, ArrowLeft, Plus } from 'lucide-react';
+import { Calendar, Users, FileText, Plus, MapPin, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { MainLayout } from '@/components/layout';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { useLanguage } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
+import { 
+  PrayerTimeWidget, 
+  QuranWidget, 
+  DuaWidget, 
+  TasbihWidget, 
+  QiblaWidget, 
+  HijriDateWidget 
+} from '@/components/dashboard/TravelerWidgets';
 
 export default function TravelerDashboard() {
   const { t, isRTL } = useLanguage();
   const { profile } = useAuth();
-
-  const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
   const stats = [
     {
@@ -36,33 +42,12 @@ export default function TravelerDashboard() {
     },
   ];
 
-  const quickActions = [
-    {
-      title: t.bookings.newBooking,
-      description: isRTL ? 'ابدأ حجز جديد لمنسك' : 'Start a new pilgrimage booking',
-      href: '/bookings/new',
-      icon: <Plus className="h-5 w-5" />,
-    },
-    {
-      title: t.beneficiaries.addNew,
-      description: isRTL ? 'أضف مستفيد جديد' : 'Add a new beneficiary',
-      href: '/beneficiaries/new',
-      icon: <Users className="h-5 w-5" />,
-    },
-    {
-      title: t.nav.services,
-      description: isRTL ? 'تصفح الخدمات المتاحة' : 'Browse available services',
-      href: '/services',
-      icon: <FileText className="h-5 w-5" />,
-    },
-  ];
-
   return (
-    <MainLayout>
-      <div className="container py-8 px-4">
+    <DashboardLayout>
+      <div className="p-6 space-y-6">
         {/* Welcome Header */}
-        <div className="mb-8">
-          <h1 className={`text-3xl font-bold mb-2 ${isRTL ? 'font-arabic' : ''}`}>
+        <div>
+          <h1 className={`text-2xl font-bold mb-1 ${isRTL ? 'font-arabic' : ''}`}>
             {t.common.welcome}, {profile?.full_name || (isRTL ? 'مسافر' : 'Traveler')}
           </h1>
           <p className="text-muted-foreground">
@@ -71,7 +56,7 @@ export default function TravelerDashboard() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {stats.map((stat, index) => (
             <Card key={index}>
               <CardContent className="pt-6">
@@ -89,30 +74,78 @@ export default function TravelerDashboard() {
           ))}
         </div>
 
+        {/* Islamic Widgets Grid */}
+        <div>
+          <h2 className={`text-lg font-semibold mb-4 ${isRTL ? 'font-arabic' : ''}`}>
+            {isRTL ? 'أدوات إسلامية' : 'Islamic Tools'}
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <PrayerTimeWidget />
+            <HijriDateWidget />
+            <QiblaWidget />
+            <QuranWidget />
+            <DuaWidget />
+            <TasbihWidget />
+          </div>
+        </div>
+
         {/* Quick Actions */}
-        <div className="mb-8">
-          <h2 className={`text-xl font-semibold mb-4 ${isRTL ? 'font-arabic' : ''}`}>
+        <div>
+          <h2 className={`text-lg font-semibold mb-4 ${isRTL ? 'font-arabic' : ''}`}>
             {isRTL ? 'إجراءات سريعة' : 'Quick Actions'}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {quickActions.map((action, index) => (
-              <Link key={index} to={action.href}>
-                <Card className="h-full hover:border-primary transition-colors cursor-pointer">
-                  <CardContent className="pt-6">
-                    <div className="flex items-start gap-4">
-                      <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                        {action.icon}
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-medium mb-1">{action.title}</h3>
-                        <p className="text-sm text-muted-foreground">{action.description}</p>
-                      </div>
-                      <Arrow className="h-5 w-5 text-muted-foreground" />
+            <Link to="/bookings/new">
+              <Card className="h-full hover:border-primary transition-colors cursor-pointer">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-4">
+                    <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                      <Plus className="h-5 w-5" />
                     </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
+                    <div>
+                      <h3 className="font-medium">{t.bookings.newBooking}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {isRTL ? 'ابدأ حجز جديد لمنسك' : 'Start a new pilgrimage booking'}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+            <Link to="/beneficiaries">
+              <Card className="h-full hover:border-primary transition-colors cursor-pointer">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-4">
+                    <div className="p-2 rounded-lg bg-secondary/10 text-secondary">
+                      <Users className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium">{t.beneficiaries.addNew}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {isRTL ? 'أضف مستفيد جديد' : 'Add a new beneficiary'}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+            <Link to="/services">
+              <Card className="h-full hover:border-primary transition-colors cursor-pointer">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-4">
+                    <div className="p-2 rounded-lg bg-accent/10 text-accent">
+                      <MapPin className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium">{t.nav.services}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {isRTL ? 'تصفح الخدمات المتاحة' : 'Browse available services'}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
           </div>
         </div>
 
@@ -129,7 +162,6 @@ export default function TravelerDashboard() {
               <Button variant="outline" asChild>
                 <Link to="/bookings">
                   {isRTL ? 'عرض الكل' : 'View All'}
-                  <Arrow className="ms-2 h-4 w-4" />
                 </Link>
               </Button>
             </div>
@@ -149,6 +181,6 @@ export default function TravelerDashboard() {
           </CardContent>
         </Card>
       </div>
-    </MainLayout>
+    </DashboardLayout>
   );
 }
