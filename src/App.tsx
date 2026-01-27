@@ -16,7 +16,10 @@ import AdminDashboard from "./pages/dashboard/AdminDashboard";
 import NotFound from "./pages/NotFound";
 import BeneficiariesPage from "./pages/beneficiaries/BeneficiariesPage";
 import NewBookingPage from "./pages/bookings/NewBookingPage";
+import BookingsPage from "./pages/bookings/BookingsPage";
 import KycPage from "./pages/provider/KycPage";
+import ServicesPage from "./pages/provider/ServicesPage";
+import KycQueuePage from "./pages/admin/KycQueuePage";
 
 const queryClient = new QueryClient();
 
@@ -93,6 +96,14 @@ function AppRoutes() {
       
       {/* Booking Routes */}
       <Route
+        path="/bookings"
+        element={
+          <ProtectedRoute>
+            <BookingsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/bookings/new"
         element={
           <ProtectedRoute>
@@ -119,6 +130,14 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/provider/services"
+        element={
+          <ProtectedRoute allowedRoles={['provider', 'admin']}>
+            <ServicesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/provider/*"
         element={
           <ProtectedRoute allowedRoles={['provider', 'admin']}>
@@ -133,6 +152,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={['admin']}>
             <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/kyc"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <KycQueuePage />
           </ProtectedRoute>
         }
       />
