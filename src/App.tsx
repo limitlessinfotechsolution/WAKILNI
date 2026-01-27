@@ -14,6 +14,9 @@ import TravelerDashboard from "./pages/dashboard/TravelerDashboard";
 import ProviderDashboard from "./pages/dashboard/ProviderDashboard";
 import AdminDashboard from "./pages/dashboard/AdminDashboard";
 import NotFound from "./pages/NotFound";
+import BeneficiariesPage from "./pages/beneficiaries/BeneficiariesPage";
+import NewBookingPage from "./pages/bookings/NewBookingPage";
+import KycPage from "./pages/provider/KycPage";
 
 const queryClient = new QueryClient();
 
@@ -78,12 +81,40 @@ function AppRoutes() {
         }
       />
       
+      {/* Beneficiaries Routes */}
+      <Route
+        path="/beneficiaries"
+        element={
+          <ProtectedRoute>
+            <BeneficiariesPage />
+          </ProtectedRoute>
+        }
+      />
+      
+      {/* Booking Routes */}
+      <Route
+        path="/bookings/new"
+        element={
+          <ProtectedRoute>
+            <NewBookingPage />
+          </ProtectedRoute>
+        }
+      />
+      
       {/* Provider Routes */}
       <Route
         path="/provider"
         element={
           <ProtectedRoute allowedRoles={['provider', 'admin']}>
             <ProviderDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/provider/kyc"
+        element={
+          <ProtectedRoute allowedRoles={['provider', 'admin']}>
+            <KycPage />
           </ProtectedRoute>
         }
       />
