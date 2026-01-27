@@ -22,6 +22,7 @@ import BookingsPage from "./pages/bookings/BookingsPage";
 import BookingDetailPage from "./pages/bookings/BookingDetailPage";
 import KycPage from "./pages/provider/KycPage";
 import ServicesPage from "./pages/provider/ServicesPage";
+import ReviewsPage from "./pages/provider/ReviewsPage";
 import KycQueuePage from "./pages/admin/KycQueuePage";
 import UsersManagementPage from "./pages/admin/UsersManagementPage";
 import VendorsManagementPage from "./pages/admin/VendorsManagementPage";
@@ -111,6 +112,7 @@ function AppRoutes() {
       <Route path="/provider" element={<ProtectedRoute allowedRoles={['provider', 'admin', 'super_admin']}><ProviderDashboard /></ProtectedRoute>} />
       <Route path="/provider/kyc" element={<ProtectedRoute allowedRoles={['provider', 'admin', 'super_admin']}><KycPage /></ProtectedRoute>} />
       <Route path="/provider/services" element={<ProtectedRoute allowedRoles={['provider', 'admin', 'super_admin']}><ServicesPage /></ProtectedRoute>} />
+      <Route path="/provider/reviews" element={<ProtectedRoute allowedRoles={['provider', 'admin', 'super_admin']}><ReviewsPage /></ProtectedRoute>} />
       
       {/* Vendor Routes */}
       <Route path="/vendor" element={<ProtectedRoute allowedRoles={['vendor', 'admin', 'super_admin']}><VendorDashboard /></ProtectedRoute>} />
