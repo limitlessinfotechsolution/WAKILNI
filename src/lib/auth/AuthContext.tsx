@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
-type AppRole = 'admin' | 'traveler' | 'provider';
+type AppRole = 'admin' | 'super_admin' | 'traveler' | 'provider' | 'vendor';
 
 interface Profile {
   id: string;
@@ -21,6 +21,8 @@ interface AuthContextType {
   profile: Profile | null;
   role: AppRole | null;
   isLoading: boolean;
+  isSuperAdmin: boolean;
+  isAdmin: boolean;
   signUp: (email: string, password: string, fullName: string, role: AppRole) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -40,6 +42,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [role, setRole] = useState<AppRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const isSuperAdmin = role === 'super_admin';
+  const isAdmin = role === 'admin' || role === 'super_admin';
+
   const fetchProfile = async (userId: string) => {
     try {
       const { data: profileData, error: profileError } = await supabase
@@ -55,19 +60,35 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       setProfile(profileData as Profile | null);
 
-      // Fetch role
+      // Fetch role - prioritize super_admin > admin > others
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
-        .maybeSingle();
+        .order('role');
 
       if (roleError) {
         console.error('Error fetching role:', roleError);
         return;
       }
 
-      setRole(roleData?.role as AppRole || 'traveler');
+      // Determine highest priority role
+      if (roleData && roleData.length > 0) {
+        const roles = roleData.map(r => r.role);
+        if (roles.includes('super_admin')) {
+          setRole('super_admin');
+        } else if (roles.includes('admin')) {
+          setRole('admin');
+        } else if (roles.includes('vendor')) {
+          setRole('vendor');
+        } else if (roles.includes('provider')) {
+          setRole('provider');
+        } else {
+          setRole('traveler');
+        }
+      } else {
+        setRole('traveler');
+      }
     } catch (error) {
       console.error('Error in fetchProfile:', error);
     }
@@ -172,6 +193,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         profile,
         role,
         isLoading,
+        isSuperAdmin,
+        isAdmin,
         signUp,
         signIn,
         signOut,

@@ -20,6 +20,13 @@ import BookingsPage from "./pages/bookings/BookingsPage";
 import KycPage from "./pages/provider/KycPage";
 import ServicesPage from "./pages/provider/ServicesPage";
 import KycQueuePage from "./pages/admin/KycQueuePage";
+import UsersManagementPage from "./pages/admin/UsersManagementPage";
+import VendorsManagementPage from "./pages/admin/VendorsManagementPage";
+import ProvidersManagementPage from "./pages/admin/ProvidersManagementPage";
+import DonationsPage from "./pages/admin/DonationsPage";
+import SystemSettingsPage from "./pages/super-admin/SystemSettingsPage";
+import AuditLogsPage from "./pages/super-admin/AuditLogsPage";
+import AdminManagementPage from "./pages/super-admin/AdminManagementPage";
 
 const queryClient = new QueryClient();
 
@@ -40,16 +47,16 @@ function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode;
   }
 
   if (allowedRoles && role && !allowedRoles.includes(role)) {
-    // Redirect to appropriate dashboard based on role
-    if (role === 'admin') return <Navigate to="/admin" replace />;
+    if (role === 'super_admin' || role === 'admin') return <Navigate to="/admin" replace />;
     if (role === 'provider') return <Navigate to="/provider" replace />;
+    if (role === 'vendor') return <Navigate to="/vendor" replace />;
     return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;
 }
 
-// Dashboard Router - redirects to appropriate dashboard based on role
+// Dashboard Router
 function DashboardRouter() {
   const { role, isLoading } = useAuth();
 
@@ -61,8 +68,9 @@ function DashboardRouter() {
     );
   }
 
-  if (role === 'admin') return <Navigate to="/admin" replace />;
+  if (role === 'super_admin' || role === 'admin') return <Navigate to="/admin" replace />;
   if (role === 'provider') return <Navigate to="/provider" replace />;
+  if (role === 'vendor') return <Navigate to="/vendor" replace />;
   return <TravelerDashboard />;
 }
 
@@ -74,103 +82,31 @@ function AppRoutes() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
       
-      {/* Protected Routes - Dashboard Router */}
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <DashboardRouter />
-          </ProtectedRoute>
-        }
-      />
+      {/* Dashboard Router */}
+      <Route path="/dashboard" element={<ProtectedRoute><DashboardRouter /></ProtectedRoute>} />
       
-      {/* Beneficiaries Routes */}
-      <Route
-        path="/beneficiaries"
-        element={
-          <ProtectedRoute>
-            <BeneficiariesPage />
-          </ProtectedRoute>
-        }
-      />
-      
-      {/* Booking Routes */}
-      <Route
-        path="/bookings"
-        element={
-          <ProtectedRoute>
-            <BookingsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/bookings/new"
-        element={
-          <ProtectedRoute>
-            <NewBookingPage />
-          </ProtectedRoute>
-        }
-      />
+      {/* Traveler Routes */}
+      <Route path="/beneficiaries" element={<ProtectedRoute><BeneficiariesPage /></ProtectedRoute>} />
+      <Route path="/bookings" element={<ProtectedRoute><BookingsPage /></ProtectedRoute>} />
+      <Route path="/bookings/new" element={<ProtectedRoute><NewBookingPage /></ProtectedRoute>} />
       
       {/* Provider Routes */}
-      <Route
-        path="/provider"
-        element={
-          <ProtectedRoute allowedRoles={['provider', 'admin']}>
-            <ProviderDashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/provider/kyc"
-        element={
-          <ProtectedRoute allowedRoles={['provider', 'admin']}>
-            <KycPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/provider/services"
-        element={
-          <ProtectedRoute allowedRoles={['provider', 'admin']}>
-            <ServicesPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/provider/*"
-        element={
-          <ProtectedRoute allowedRoles={['provider', 'admin']}>
-            <ProviderDashboard />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/provider" element={<ProtectedRoute allowedRoles={['provider', 'admin', 'super_admin']}><ProviderDashboard /></ProtectedRoute>} />
+      <Route path="/provider/kyc" element={<ProtectedRoute allowedRoles={['provider', 'admin', 'super_admin']}><KycPage /></ProtectedRoute>} />
+      <Route path="/provider/services" element={<ProtectedRoute allowedRoles={['provider', 'admin', 'super_admin']}><ServicesPage /></ProtectedRoute>} />
       
       {/* Admin Routes */}
-      <Route
-        path="/admin"
-        element={
-          <ProtectedRoute allowedRoles={['admin']}>
-            <AdminDashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/kyc"
-        element={
-          <ProtectedRoute allowedRoles={['admin']}>
-            <KycQueuePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/*"
-        element={
-          <ProtectedRoute allowedRoles={['admin']}>
-            <AdminDashboard />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><AdminDashboard /></ProtectedRoute>} />
+      <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><UsersManagementPage /></ProtectedRoute>} />
+      <Route path="/admin/providers" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><ProvidersManagementPage /></ProtectedRoute>} />
+      <Route path="/admin/vendors" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><VendorsManagementPage /></ProtectedRoute>} />
+      <Route path="/admin/kyc" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><KycQueuePage /></ProtectedRoute>} />
+      <Route path="/admin/donations" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><DonationsPage /></ProtectedRoute>} />
+      
+      {/* Super Admin Routes */}
+      <Route path="/super-admin/settings" element={<ProtectedRoute allowedRoles={['super_admin']}><SystemSettingsPage /></ProtectedRoute>} />
+      <Route path="/super-admin/audit" element={<ProtectedRoute allowedRoles={['super_admin']}><AuditLogsPage /></ProtectedRoute>} />
+      <Route path="/super-admin/admins" element={<ProtectedRoute allowedRoles={['super_admin']}><AdminManagementPage /></ProtectedRoute>} />
 
       {/* Catch-all */}
       <Route path="*" element={<NotFound />} />

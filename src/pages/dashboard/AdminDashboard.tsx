@@ -1,43 +1,60 @@
-import { Link } from 'react-router-dom';
-import { Users, Calendar, DollarSign, UserCheck, AlertTriangle, TrendingUp } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { 
+  Users, Calendar, DollarSign, UserCheck, AlertTriangle, TrendingUp,
+  Building2, Heart, Settings, Shield, FileText, Bell
+} from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { MainLayout } from '@/components/layout';
 import { useLanguage } from '@/lib/i18n';
+import { useAdminStats } from '@/hooks/useAdminStats';
+import { useAuth } from '@/lib/auth';
 
 export default function AdminDashboard() {
   const { t, isRTL } = useLanguage();
+  const { stats, isLoading } = useAdminStats();
+  const { isSuperAdmin } = useAuth();
+  const navigate = useNavigate();
 
-  const stats = [
+  const mainStats = [
     {
-      title: t.admin.totalUsers,
-      value: '0',
-      change: '+0%',
+      title: isRTL ? 'المسافرون' : 'Travelers',
+      value: stats.totalTravelers.toString(),
       icon: <Users className="h-5 w-5" />,
       color: 'text-blue-600',
       bgColor: 'bg-blue-100',
     },
     {
-      title: t.admin.totalProviders,
-      value: '0',
-      change: '+0%',
+      title: isRTL ? 'مقدمو الخدمات' : 'Providers',
+      value: stats.totalProviders.toString(),
       icon: <UserCheck className="h-5 w-5" />,
       color: 'text-green-600',
       bgColor: 'bg-green-100',
     },
     {
-      title: t.admin.totalBookings,
-      value: '0',
-      change: '+0%',
-      icon: <Calendar className="h-5 w-5" />,
+      title: isRTL ? 'الوكلاء' : 'Vendors',
+      value: stats.totalVendors.toString(),
+      icon: <Building2 className="h-5 w-5" />,
       color: 'text-purple-600',
       bgColor: 'bg-purple-100',
     },
     {
-      title: t.admin.revenue,
-      value: 'SAR 0',
-      change: '+0%',
-      icon: <DollarSign className="h-5 w-5" />,
+      title: isRTL ? 'الحجوزات' : 'Bookings',
+      value: stats.totalBookings.toString(),
+      icon: <Calendar className="h-5 w-5" />,
+      color: 'text-orange-600',
+      bgColor: 'bg-orange-100',
+    },
+    {
+      title: isRTL ? 'التبرعات' : 'Donations',
+      value: `SAR ${stats.donationAmount.toLocaleString()}`,
+      icon: <Heart className="h-5 w-5" />,
+      color: 'text-red-600',
+      bgColor: 'bg-red-100',
+    },
+    {
+      title: isRTL ? 'طلبات التحقق المعلقة' : 'Pending KYC',
+      value: stats.pendingKyc.toString(),
+      icon: <AlertTriangle className="h-5 w-5" />,
       color: 'text-yellow-600',
       bgColor: 'bg-yellow-100',
     },
@@ -45,35 +62,75 @@ export default function AdminDashboard() {
 
   const adminLinks = [
     {
-      title: t.admin.users,
-      description: isRTL ? 'إدارة المستخدمين والأدوار' : 'Manage users and roles',
+      title: isRTL ? 'إدارة المستخدمين' : 'User Management',
+      description: isRTL ? 'إدارة المسافرين والأدوار' : 'Manage travelers and roles',
       href: '/admin/users',
       icon: <Users className="h-5 w-5" />,
     },
     {
-      title: t.admin.providers,
-      description: isRTL ? 'إدارة مقدمي الخدمات' : 'Manage service providers',
+      title: isRTL ? 'إدارة مقدمي الخدمات' : 'Provider Management',
+      description: isRTL ? 'إدارة مقدمي خدمات الحج والعمرة' : 'Manage Hajj & Umrah service providers',
       href: '/admin/providers',
       icon: <UserCheck className="h-5 w-5" />,
     },
     {
-      title: t.admin.kycQueue,
+      title: isRTL ? 'إدارة الوكلاء' : 'Vendor Management',
+      description: isRTL ? 'إدارة وكالات السفر' : 'Manage travel agencies',
+      href: '/admin/vendors',
+      icon: <Building2 className="h-5 w-5" />,
+    },
+    {
+      title: isRTL ? 'طابور التحقق' : 'KYC Queue',
       description: isRTL ? 'مراجعة طلبات التحقق' : 'Review verification requests',
       href: '/admin/kyc',
       icon: <AlertTriangle className="h-5 w-5" />,
-      badge: 0,
+      badge: stats.pendingKyc,
     },
     {
-      title: t.admin.bookings,
-      description: isRTL ? 'عرض جميع الحجوزات' : 'View all bookings',
+      title: isRTL ? 'التبرعات والصدقات' : 'Donations & Charity',
+      description: isRTL ? 'إدارة التبرعات وطلبات الصدقة' : 'Manage donations and charity requests',
+      href: '/admin/donations',
+      icon: <Heart className="h-5 w-5" />,
+    },
+    {
+      title: isRTL ? 'إدارة الحجوزات' : 'Booking Management',
+      description: isRTL ? 'عرض وتخصيص الحجوزات' : 'View and allocate bookings',
       href: '/admin/bookings',
       icon: <Calendar className="h-5 w-5" />,
+      badge: stats.pendingBookings,
     },
     {
-      title: t.admin.analytics,
+      title: isRTL ? 'إشعارات النظام' : 'System Notices',
+      description: isRTL ? 'إدارة الإعلانات والتنبيهات' : 'Manage announcements and alerts',
+      href: '/admin/notices',
+      icon: <Bell className="h-5 w-5" />,
+    },
+    {
+      title: isRTL ? 'التقارير' : 'Reports & Analytics',
       description: isRTL ? 'تحليلات المنصة' : 'Platform analytics',
       href: '/admin/analytics',
       icon: <TrendingUp className="h-5 w-5" />,
+    },
+  ];
+
+  const superAdminLinks = [
+    {
+      title: isRTL ? 'إعدادات النظام' : 'System Settings',
+      description: isRTL ? 'تحكم في ميزات النظام' : 'Control system features',
+      href: '/super-admin/settings',
+      icon: <Settings className="h-5 w-5" />,
+    },
+    {
+      title: isRTL ? 'سجل التدقيق' : 'Audit Logs',
+      description: isRTL ? 'تتبع جميع الإجراءات' : 'Track all actions',
+      href: '/super-admin/audit',
+      icon: <FileText className="h-5 w-5" />,
+    },
+    {
+      title: isRTL ? 'إدارة المشرفين' : 'Admin Management',
+      description: isRTL ? 'إدارة حسابات المشرفين' : 'Manage admin accounts',
+      href: '/super-admin/admins',
+      icon: <Shield className="h-5 w-5" />,
     },
   ];
 
@@ -83,7 +140,10 @@ export default function AdminDashboard() {
         {/* Header */}
         <div className="mb-8">
           <h1 className={`text-3xl font-bold mb-2 ${isRTL ? 'font-arabic' : ''}`}>
-            {t.admin.dashboard}
+            {isSuperAdmin 
+              ? (isRTL ? 'لوحة التحكم الرئيسية' : 'Super Admin Dashboard')
+              : (isRTL ? 'لوحة تحكم المشرف' : 'Admin Dashboard')
+            }
           </h1>
           <p className="text-muted-foreground">
             {isRTL ? 'نظرة عامة على المنصة' : 'Platform overview'}
@@ -91,51 +151,78 @@ export default function AdminDashboard() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat, index) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
+          {mainStats.map((stat, index) => (
             <Card key={index}>
-              <CardContent className="pt-6">
+              <CardContent className="pt-4 pb-4">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm text-muted-foreground">{stat.title}</p>
-                  <div className={`p-2 rounded-lg ${stat.bgColor} ${stat.color}`}>
+                  <p className="text-xs text-muted-foreground">{stat.title}</p>
+                  <div className={`p-1.5 rounded-lg ${stat.bgColor} ${stat.color}`}>
                     {stat.icon}
                   </div>
                 </div>
-                <div className="flex items-baseline gap-2">
-                  <p className="text-2xl font-bold">{stat.value}</p>
-                  <span className="text-xs text-green-600">{stat.change}</span>
-                </div>
+                <p className="text-xl font-bold">{isLoading ? '...' : stat.value}</p>
               </CardContent>
             </Card>
           ))}
         </div>
 
         {/* Admin Actions Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {adminLinks.map((link, index) => (
-            <Link key={index} to={link.href}>
-              <Card className="h-full hover:border-primary transition-colors cursor-pointer">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                      {link.icon}
+        <div className="mb-8">
+          <h2 className={`text-xl font-semibold mb-4 ${isRTL ? 'font-arabic' : ''}`}>
+            {isRTL ? 'الإدارة' : 'Management'}
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {adminLinks.map((link, index) => (
+              <Link key={index} to={link.href}>
+                <Card className="h-full hover:border-primary transition-colors cursor-pointer">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                        {link.icon}
+                      </div>
+                      {link.badge !== undefined && link.badge > 0 && (
+                        <span className="px-2 py-1 text-xs font-medium bg-destructive text-destructive-foreground rounded-full">
+                          {link.badge}
+                        </span>
+                      )}
                     </div>
-                    {link.badge !== undefined && link.badge > 0 && (
-                      <span className="px-2 py-1 text-xs font-medium bg-destructive text-destructive-foreground rounded-full">
-                        {link.badge}
-                      </span>
-                    )}
-                  </div>
-                  <CardTitle className="text-lg">{link.title}</CardTitle>
-                  <CardDescription>{link.description}</CardDescription>
-                </CardHeader>
-              </Card>
-            </Link>
-          ))}
+                    <CardTitle className="text-base">{link.title}</CardTitle>
+                    <CardDescription className="text-xs">{link.description}</CardDescription>
+                  </CardHeader>
+                </Card>
+              </Link>
+            ))}
+          </div>
         </div>
 
-        {/* Recent Activity */}
-        <Card className="mt-8">
+        {/* Super Admin Section */}
+        {isSuperAdmin && (
+          <div className="mb-8">
+            <h2 className={`text-xl font-semibold mb-4 text-destructive ${isRTL ? 'font-arabic' : ''}`}>
+              <Shield className="inline-block h-5 w-5 mr-2" />
+              {isRTL ? 'تحكم المشرف الرئيسي' : 'Super Admin Controls'}
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {superAdminLinks.map((link, index) => (
+                <Link key={index} to={link.href}>
+                  <Card className="h-full hover:border-destructive transition-colors cursor-pointer border-destructive/20">
+                    <CardHeader className="pb-3">
+                      <div className="p-2 rounded-lg bg-destructive/10 text-destructive w-fit">
+                        {link.icon}
+                      </div>
+                      <CardTitle className="text-base">{link.title}</CardTitle>
+                      <CardDescription className="text-xs">{link.description}</CardDescription>
+                    </CardHeader>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Quick Actions */}
+        <Card>
           <CardHeader>
             <CardTitle>{isRTL ? 'النشاط الأخير' : 'Recent Activity'}</CardTitle>
             <CardDescription>
