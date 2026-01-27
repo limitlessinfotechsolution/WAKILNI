@@ -1,15 +1,18 @@
 import { Link } from 'react-router-dom';
-import { Calendar, DollarSign, Star, Clock, FileText, AlertCircle, CheckCircle } from 'lucide-react';
+import { Calendar, DollarSign, Star, Clock, FileText, AlertCircle, CheckCircle, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { MainLayout } from '@/components/layout';
 import { useLanguage } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
-
+import { useProvider } from '@/hooks/useProvider';
+import { useProviderReviews } from '@/hooks/useReviews';
 export default function ProviderDashboard() {
   const { t, isRTL } = useLanguage();
   const { profile } = useAuth();
+  const { provider } = useProvider();
+  const { stats: reviewStats } = useProviderReviews(provider?.id);
 
   // Mock KYC status - would come from providers table
   // Mock KYC status - would come from providers table
@@ -39,7 +42,7 @@ export default function ProviderDashboard() {
     },
     {
       title: t.provider.rating,
-      value: '0.0',
+      value: reviewStats.averageRating.toFixed(1),
       icon: <Star className="h-5 w-5" />,
       color: 'text-yellow-600',
       bgColor: 'bg-yellow-100',
@@ -169,6 +172,50 @@ export default function ProviderDashboard() {
                     {isRTL ? 'إضافة خدمة' : 'Add Service'}
                   </Link>
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Reviews Card */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5" />
+                    {isRTL ? 'التقييمات' : 'Reviews'}
+                  </CardTitle>
+                  <CardDescription>
+                    {isRTL ? 'تقييمات المسافرين لخدماتك' : 'Traveler feedback on your services'}
+                  </CardDescription>
+                </div>
+                <Button variant="outline" size="sm" asChild>
+                  <Link to="/provider/reviews">
+                    {isRTL ? 'عرض الكل' : 'View All'}
+                  </Link>
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-6">
+                <div className="text-center">
+                  <div className="text-3xl font-bold">{reviewStats.averageRating.toFixed(1)}</div>
+                  <div className="flex items-center gap-0.5 mt-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={`h-4 w-4 ${
+                          star <= Math.round(reviewStats.averageRating)
+                            ? 'fill-yellow-400 text-yellow-400'
+                            : 'text-muted-foreground'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    {reviewStats.totalReviews} {isRTL ? 'تقييم' : 'reviews'}
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
