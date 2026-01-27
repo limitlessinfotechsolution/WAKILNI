@@ -120,6 +120,49 @@
     --cream: 160 30% 8%;
     --cream-dark: 160 25% 12%;
   }
+
+  /* Role-specific color themes */
+  .theme-traveler {
+    --sidebar-primary: 158 64% 28%;
+    --sidebar-primary-foreground: 45 30% 97%;
+    --sidebar-accent: 158 45% 45%;
+  }
+
+  .theme-provider {
+    --sidebar-primary: 43 74% 49%;
+    --sidebar-primary-foreground: 160 40% 10%;
+    --sidebar-accent: 43 65% 55%;
+    --sidebar-background: 43 20% 96%;
+  }
+
+  .theme-provider.dark, .dark .theme-provider {
+    --sidebar-primary: 43 65% 55%;
+    --sidebar-background: 43 20% 10%;
+  }
+
+  .theme-vendor {
+    --sidebar-primary: 220 70% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 60% 60%;
+    --sidebar-background: 220 20% 96%;
+  }
+
+  .theme-vendor.dark, .dark .theme-vendor {
+    --sidebar-primary: 220 60% 60%;
+    --sidebar-background: 220 20% 10%;
+  }
+
+  .theme-admin {
+    --sidebar-primary: 280 65% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 280 55% 60%;
+    --sidebar-background: 280 15% 96%;
+  }
+
+  .theme-admin.dark, .dark .theme-admin {
+    --sidebar-primary: 280 55% 60%;
+    --sidebar-background: 280 15% 10%;
+  }
 }
 
 @layer base {

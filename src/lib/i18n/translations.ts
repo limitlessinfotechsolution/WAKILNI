@@ -113,6 +113,13 @@ export const translations = {
       admin: 'Administrator',
       traveler: 'Traveler',
       provider: 'Provider',
+      vendor: 'Vendor',
+    },
+    
+    // Vendor
+    vendor: {
+      title: 'Service Vendor',
+      desc: 'Manage your travel agency and providers',
     },
     
     // Services
@@ -328,6 +335,13 @@ export const translations = {
       admin: 'مدير',
       traveler: 'مسافر',
       provider: 'مقدم خدمة',
+      vendor: 'شركة خدمات',
+    },
+    
+    // Vendor
+    vendor: {
+      title: 'شركة خدمات',
+      desc: 'إدارة وكالة السفر ومقدمي الخدمات',
     },
     
     // Services

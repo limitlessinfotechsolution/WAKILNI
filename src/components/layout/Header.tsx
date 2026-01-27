@@ -15,7 +15,11 @@ import { useAuth } from '@/lib/auth';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { AdminNotifications } from '@/components/admin/AdminNotifications';
 
-export function Header() {
+interface HeaderProps {
+  showNav?: boolean;
+}
+
+export function Header({ showNav = true }: HeaderProps) {
   const { t, isRTL } = useLanguage();
   const { user, profile, role, signOut } = useAuth();
   const navigate = useNavigate();
@@ -68,37 +72,39 @@ export function Header() {
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-6">
-          <Link
-            to="/services"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            {t.nav.services}
-          </Link>
-          <Link
-            to="/donate"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-          >
-            <Heart className="h-4 w-4" />
-            {isRTL ? 'تبرع' : 'Donate'}
-          </Link>
-          {user && (
-            <>
-              <Link
-                to={getDashboardLink()}
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {t.nav.dashboard}
-              </Link>
-              <Link
-                to="/bookings"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {t.nav.bookings}
-              </Link>
-            </>
-          )}
-        </nav>
+        {showNav && (
+          <nav className="hidden md:flex items-center gap-6">
+            <Link
+              to="/services"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {t.nav.services}
+            </Link>
+            <Link
+              to="/donate"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+            >
+              <Heart className="h-4 w-4" />
+              {isRTL ? 'تبرع' : 'Donate'}
+            </Link>
+            {user && (
+              <>
+                <Link
+                  to={getDashboardLink()}
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {t.nav.dashboard}
+                </Link>
+                <Link
+                  to="/bookings"
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {t.nav.bookings}
+                </Link>
+              </>
+            )}
+          </nav>
+        )}
 
         {/* Right Side Actions */}
         <div className="flex items-center gap-2">

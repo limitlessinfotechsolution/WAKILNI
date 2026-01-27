@@ -1,226 +1,205 @@
 import { Link } from 'react-router-dom';
-import { Calendar, DollarSign, Star, Clock, FileText, AlertCircle, CheckCircle, MessageSquare } from 'lucide-react';
+import { Calendar, FileText, Star, Shield, ArrowRight, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MainLayout } from '@/components/layout';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { useLanguage } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
 import { useProvider } from '@/hooks/useProvider';
 import { useProviderReviews } from '@/hooks/useReviews';
+import { 
+  EarningsWidget, 
+  PerformanceWidget, 
+  BookingsOverviewWidget, 
+  ClientsWidget 
+} from '@/components/dashboard/ProviderWidgets';
+
 export default function ProviderDashboard() {
   const { t, isRTL } = useLanguage();
   const { profile } = useAuth();
-  const { provider } = useProvider();
+  const { provider, isLoading: providerLoading } = useProvider();
   const { stats: reviewStats } = useProviderReviews(provider?.id);
 
-  // Mock KYC status - would come from providers table
-  // Mock KYC status - would come from providers table
-  type KycStatus = 'pending' | 'under_review' | 'approved' | 'rejected';
-  const kycStatus: KycStatus = 'pending';
+  const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
-  const getKycBadge = (status: KycStatus) => {
-    switch (status) {
+  const avgRating = reviewStats?.averageRating || 0;
+
+  const kycStatusBadge = () => {
+    switch (provider?.kyc_status) {
       case 'approved':
         return <Badge className="bg-green-500">{t.provider.kycApproved}</Badge>;
       case 'under_review':
-        return <Badge className="bg-yellow-500">{t.provider.kycUnderReview}</Badge>;
+        return <Badge variant="secondary">{t.provider.kycUnderReview}</Badge>;
       case 'rejected':
         return <Badge variant="destructive">{t.provider.kycRejected}</Badge>;
       default:
-        return <Badge variant="secondary">{t.provider.kycPending}</Badge>;
+        return <Badge variant="outline">{t.provider.kycPending}</Badge>;
     }
   };
 
-  const stats = [
-    {
-      title: t.provider.earnings,
-      value: 'SAR 0',
-      icon: <DollarSign className="h-5 w-5" />,
-      color: 'text-green-600',
-      bgColor: 'bg-green-100',
-    },
-    {
-      title: t.provider.rating,
-      value: reviewStats.averageRating.toFixed(1),
-      icon: <Star className="h-5 w-5" />,
-      color: 'text-yellow-600',
-      bgColor: 'bg-yellow-100',
-    },
-    {
-      title: t.provider.completedBookings,
-      value: '0',
-      icon: <CheckCircle className="h-5 w-5" />,
-      color: 'text-primary',
-      bgColor: 'bg-primary/10',
-    },
-    {
-      title: t.provider.pendingRequests,
-      value: '0',
-      icon: <Clock className="h-5 w-5" />,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-100',
-    },
-  ];
-
   return (
-    <MainLayout>
-      <div className="container py-8 px-4">
+    <DashboardLayout>
+      <div className="p-6 space-y-6">
         {/* Welcome Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+        <div className="flex items-start justify-between">
           <div>
-            <h1 className={`text-3xl font-bold mb-2 ${isRTL ? 'font-arabic' : ''}`}>
-              {t.provider.dashboard}
+            <h1 className={`text-2xl font-bold mb-1 ${isRTL ? 'font-arabic' : ''}`}>
+              {t.common.welcome}, {profile?.full_name || (isRTL ? 'مقدم الخدمة' : 'Provider')}
             </h1>
             <p className="text-muted-foreground">
-              {t.common.welcome}, {profile?.full_name || (isRTL ? 'مقدم خدمة' : 'Provider')}
+              {isRTL ? 'إدارة خدماتك وحجوزاتك' : 'Manage your services and bookings'}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">{t.provider.kyc}:</span>
-            {getKycBadge(kycStatus)}
-          </div>
+          {kycStatusBadge()}
         </div>
 
-        {/* KYC Alert for pending status */}
-        {kycStatus === 'pending' && (
-          <Card className="mb-8 border-yellow-300 bg-yellow-50">
+        {/* KYC Alert */}
+        {provider?.kyc_status !== 'approved' && (
+          <Card className="border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20">
             <CardContent className="pt-6">
-              <div className="flex items-start gap-4">
-                <AlertCircle className="h-6 w-6 text-yellow-600 flex-shrink-0" />
+              <div className="flex items-center gap-4">
+                <Shield className="h-8 w-8 text-yellow-600" />
                 <div className="flex-1">
-                  <h3 className="font-medium text-yellow-800 mb-1">
-                    {isRTL ? 'يرجى إكمال التحقق من هويتك' : 'Please Complete Your Verification'}
+                  <h3 className="font-medium">
+                    {isRTL ? 'أكمل التحقق من هويتك' : 'Complete Your Verification'}
                   </h3>
-                  <p className="text-sm text-yellow-700 mb-3">
+                  <p className="text-sm text-muted-foreground">
                     {isRTL 
-                      ? 'لبدء استقبال الحجوزات، يجب عليك إكمال عملية التحقق من الهوية'
-                      : 'To start receiving bookings, you need to complete the identity verification process'}
+                      ? 'يجب إكمال التحقق من الهوية لقبول الحجوزات' 
+                      : 'Complete identity verification to start accepting bookings'}
                   </p>
-                  <Button size="sm" asChild>
-                    <Link to="/provider/kyc">{t.provider.submitKyc}</Link>
-                  </Button>
                 </div>
+                <Button asChild>
+                  <Link to="/provider/kyc">
+                    {t.provider.submitKyc}
+                    <Arrow className="ms-2 h-4 w-4" />
+                  </Link>
+                </Button>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat, index) => (
-            <Card key={index}>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">{stat.title}</p>
-                    <p className="text-2xl font-bold">{stat.value}</p>
+        {/* Widgets Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <EarningsWidget total={0} thisMonth={0} />
+          <PerformanceWidget 
+            completionRate={provider?.total_bookings ? 100 : 0} 
+            responseTime={2} 
+            rating={avgRating} 
+          />
+          <ClientsWidget total={provider?.total_bookings || 0} returning={0} />
+          <BookingsOverviewWidget pending={0} inProgress={0} completed={provider?.total_bookings || 0} />
+        </div>
+
+        {/* Reviews Summary */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Star className="h-5 w-5 text-gold fill-gold" />
+                  {t.provider.reviews}
+                </CardTitle>
+                <CardDescription>
+                  {isRTL ? 'تقييمات العملاء' : 'Customer feedback'}
+                </CardDescription>
+              </div>
+              <Button variant="outline" asChild>
+                <Link to="/provider/reviews">
+                  {isRTL ? 'عرض الكل' : 'View All'}
+                  <Arrow className="ms-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {reviewStats && reviewStats.totalReviews > 0 ? (
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="text-center">
+                    <p className="text-4xl font-bold">{avgRating.toFixed(1)}</p>
+                    <div className="flex gap-0.5 mt-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          className={`h-4 w-4 ${
+                            star <= avgRating ? 'text-gold fill-gold' : 'text-muted'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {reviewStats.totalReviews} {isRTL ? 'تقييم' : 'reviews'}
+                    </p>
                   </div>
-                  <div className={`p-3 rounded-lg ${stat.bgColor} ${stat.color}`}>
-                    {stat.icon}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Star className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>{isRTL ? 'لا توجد تقييمات بعد' : 'No reviews yet'}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Quick Links */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Link to="/provider/services">
+            <Card className="h-full hover:border-primary transition-colors cursor-pointer">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                    <FileText className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium">{t.nav.services}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {isRTL ? 'إدارة خدماتك' : 'Manage your services'}
+                    </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Pending Requests */}
-          <Card>
-            <CardHeader>
-              <CardTitle>{t.provider.pendingRequests}</CardTitle>
-              <CardDescription>
-                {isRTL ? 'طلبات الحجز الجديدة' : 'New booking requests'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <Clock className="h-10 w-10 text-muted-foreground mb-3" />
-                <p className="text-muted-foreground">
-                  {isRTL ? 'لا توجد طلبات معلقة' : 'No pending requests'}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* My Services */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>{t.nav.services}</CardTitle>
-                  <CardDescription>
-                    {isRTL ? 'الخدمات التي تقدمها' : 'Services you offer'}
-                  </CardDescription>
-                </div>
-                <Button variant="outline" size="sm" asChild>
-                  <Link to="/provider/services">
-                    {isRTL ? 'إدارة' : 'Manage'}
-                  </Link>
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <FileText className="h-10 w-10 text-muted-foreground mb-3" />
-                <p className="text-muted-foreground mb-3">
-                  {isRTL ? 'لم تضف أي خدمات بعد' : 'No services added yet'}
-                </p>
-                <Button size="sm" asChild>
-                  <Link to="/provider/services/new">
-                    {isRTL ? 'إضافة خدمة' : 'Add Service'}
-                  </Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Reviews Card */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <MessageSquare className="h-5 w-5" />
-                    {isRTL ? 'التقييمات' : 'Reviews'}
-                  </CardTitle>
-                  <CardDescription>
-                    {isRTL ? 'تقييمات المسافرين لخدماتك' : 'Traveler feedback on your services'}
-                  </CardDescription>
-                </div>
-                <Button variant="outline" size="sm" asChild>
-                  <Link to="/provider/reviews">
-                    {isRTL ? 'عرض الكل' : 'View All'}
-                  </Link>
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-6">
-                <div className="text-center">
-                  <div className="text-3xl font-bold">{reviewStats.averageRating.toFixed(1)}</div>
-                  <div className="flex items-center gap-0.5 mt-1">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star
-                        key={star}
-                        className={`h-4 w-4 ${
-                          star <= Math.round(reviewStats.averageRating)
-                            ? 'fill-yellow-400 text-yellow-400'
-                            : 'text-muted-foreground'
-                        }`}
-                      />
-                    ))}
+          </Link>
+          <Link to="/provider/bookings">
+            <Card className="h-full hover:border-primary transition-colors cursor-pointer">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-2 rounded-lg bg-secondary/10 text-secondary">
+                    <Calendar className="h-5 w-5" />
                   </div>
-                  <div className="text-sm text-muted-foreground mt-1">
-                    {reviewStats.totalReviews} {isRTL ? 'تقييم' : 'reviews'}
+                  <div>
+                    <h3 className="font-medium">{t.nav.bookings}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {isRTL ? 'عرض الحجوزات' : 'View bookings'}
+                    </p>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link to="/provider/reviews">
+            <Card className="h-full hover:border-primary transition-colors cursor-pointer">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-2 rounded-lg bg-gold/10 text-gold">
+                    <Star className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium">{t.provider.reviews}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {isRTL ? 'عرض التقييمات' : 'View reviews'}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
         </div>
       </div>
-    </MainLayout>
+    </DashboardLayout>
   );
 }

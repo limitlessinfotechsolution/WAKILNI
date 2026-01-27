@@ -1,285 +1,201 @@
 import { Link } from 'react-router-dom';
-import { 
-  Building2, 
-  DollarSign, 
-  Star, 
-  Clock, 
-  FileText, 
-  AlertCircle, 
-  CheckCircle,
-  Users,
-  Calendar,
-  TrendingUp
-} from 'lucide-react';
+import { Calendar, FileText, CreditCard, Shield, ArrowRight, ArrowLeft, Users, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MainLayout } from '@/components/layout';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { useLanguage } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
 import { useVendor } from '@/hooks/useVendor';
-import { format } from 'date-fns';
+import { 
+  SubscriptionWidget, 
+  TeamWidget, 
+  RevenueWidget, 
+  ServicesStatsWidget, 
+  CompanyProfileWidget 
+} from '@/components/dashboard/VendorWidgets';
 
 export default function VendorDashboard() {
-  const { isRTL } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const { profile } = useAuth();
-  const { vendor, bookings, stats, isLoading } = useVendor();
+  const { vendor, stats, isLoading } = useVendor();
 
-  type KycStatus = 'pending' | 'under_review' | 'approved' | 'rejected';
-  const kycStatus: KycStatus = (vendor?.kyc_status as KycStatus) || 'pending';
+  const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
-  const getKycBadge = (status: KycStatus) => {
-    switch (status) {
-      case 'approved':
-        return <Badge className="bg-green-500">{isRTL ? 'تم التحقق' : 'Verified'}</Badge>;
-      case 'under_review':
-        return <Badge className="bg-yellow-500">{isRTL ? 'قيد المراجعة' : 'Under Review'}</Badge>;
-      case 'rejected':
-        return <Badge variant="destructive">{isRTL ? 'مرفوض' : 'Rejected'}</Badge>;
-      default:
-        return <Badge variant="secondary">{isRTL ? 'في انتظار التحقق' : 'Pending Verification'}</Badge>;
-    }
-  };
-
-  const getStatusBadge = (status: string | null) => {
-    switch (status) {
-      case 'completed':
-        return <Badge className="bg-green-500">{isRTL ? 'مكتمل' : 'Completed'}</Badge>;
-      case 'in_progress':
-        return <Badge className="bg-blue-500">{isRTL ? 'قيد التنفيذ' : 'In Progress'}</Badge>;
-      case 'accepted':
-        return <Badge className="bg-primary">{isRTL ? 'مقبول' : 'Accepted'}</Badge>;
-      case 'pending':
-        return <Badge variant="secondary">{isRTL ? 'معلق' : 'Pending'}</Badge>;
-      case 'cancelled':
-        return <Badge variant="destructive">{isRTL ? 'ملغي' : 'Cancelled'}</Badge>;
-      default:
-        return <Badge variant="outline">{status || 'Unknown'}</Badge>;
-    }
-  };
-
-  const statCards = [
-    {
-      title: isRTL ? 'إجمالي الإيرادات' : 'Total Revenue',
-      value: `SAR ${stats.totalRevenue.toLocaleString()}`,
-      icon: <DollarSign className="h-5 w-5" />,
-      color: 'text-green-600',
-      bgColor: 'bg-green-100',
-    },
-    {
-      title: isRTL ? 'إجمالي الحجوزات' : 'Total Bookings',
-      value: stats.totalBookings.toString(),
-      icon: <Calendar className="h-5 w-5" />,
-      color: 'text-primary',
-      bgColor: 'bg-primary/10',
-    },
-    {
-      title: isRTL ? 'الحجوزات المعلقة' : 'Pending Bookings',
-      value: stats.pendingBookings.toString(),
-      icon: <Clock className="h-5 w-5" />,
-      color: 'text-yellow-600',
-      bgColor: 'bg-yellow-100',
-    },
-    {
-      title: isRTL ? 'الحجوزات المكتملة' : 'Completed',
-      value: stats.completedBookings.toString(),
-      icon: <CheckCircle className="h-5 w-5" />,
-      color: 'text-green-600',
-      bgColor: 'bg-green-100',
-    },
-  ];
+  // Calculate days remaining for subscription
+  const daysRemaining = vendor?.subscription_expires_at 
+    ? Math.max(0, Math.ceil((new Date(vendor.subscription_expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : 0;
 
   if (isLoading) {
     return (
-      <MainLayout>
-        <div className="container py-8 flex items-center justify-center">
+      <DashboardLayout>
+        <div className="p-6 flex items-center justify-center min-h-[50vh]">
           <div className="animate-pulse text-muted-foreground">Loading...</div>
         </div>
-      </MainLayout>
+      </DashboardLayout>
     );
   }
 
   return (
-    <MainLayout>
-      <div className="container py-8 px-4">
-        {/* Welcome Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-          <div>
-            <h1 className={`text-3xl font-bold mb-2 ${isRTL ? 'font-arabic' : ''}`}>
-              {isRTL ? 'لوحة تحكم الوكيل' : 'Vendor Dashboard'}
-            </h1>
-            <p className="text-muted-foreground">
-              {isRTL ? 'مرحباً' : 'Welcome'}, {vendor?.company_name || profile?.full_name || (isRTL ? 'وكيل' : 'Vendor')}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">{isRTL ? 'حالة التحقق:' : 'Verification:'}</span>
-            {getKycBadge(kycStatus)}
-          </div>
+    <DashboardLayout>
+      <div className="p-6 space-y-6">
+        {/* Company Profile Header */}
+        <CompanyProfileWidget 
+          name={isRTL ? vendor?.company_name_ar || vendor?.company_name : vendor?.company_name}
+          isVerified={vendor?.kyc_status === 'approved'}
+          logoUrl={vendor?.logo_url || ''}
+        />
+
+        {/* Welcome Message */}
+        <div>
+          <h1 className={`text-2xl font-bold mb-1 ${isRTL ? 'font-arabic' : ''}`}>
+            {t.common.welcome}, {profile?.full_name || (isRTL ? 'شريك' : 'Partner')}
+          </h1>
+          <p className="text-muted-foreground">
+            {isRTL ? 'إدارة شركتك وفريقك من هنا' : 'Manage your company and team from here'}
+          </p>
         </div>
 
-        {/* KYC Alert for pending status */}
-        {kycStatus === 'pending' && (
-          <Card className="mb-8 border-yellow-300 bg-yellow-50">
+        {/* KYC Alert */}
+        {vendor?.kyc_status !== 'approved' && (
+          <Card className="border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20">
             <CardContent className="pt-6">
-              <div className="flex items-start gap-4">
-                <AlertCircle className="h-6 w-6 text-yellow-600 flex-shrink-0" />
+              <div className="flex items-center gap-4">
+                <Shield className="h-8 w-8 text-yellow-600" />
                 <div className="flex-1">
-                  <h3 className="font-medium text-yellow-800 mb-1">
-                    {isRTL ? 'يرجى إكمال التحقق من حسابك' : 'Please Complete Your Verification'}
+                  <h3 className="font-medium">
+                    {isRTL ? 'أكمل توثيق الشركة' : 'Complete Company Verification'}
                   </h3>
-                  <p className="text-sm text-yellow-700 mb-3">
+                  <p className="text-sm text-muted-foreground">
                     {isRTL 
-                      ? 'لبدء استقبال الحجوزات وإدارة مقدمي الخدمات، يجب عليك إكمال عملية التحقق'
-                      : 'To start receiving bookings and manage providers, you need to complete the verification process'}
+                      ? 'يجب توثيق الشركة للوصول لجميع الميزات' 
+                      : 'Verify your company to unlock all features'}
                   </p>
-                  <Button size="sm" asChild>
-                    <Link to="/vendor/kyc">{isRTL ? 'تقديم للتحقق' : 'Submit for Verification'}</Link>
-                  </Button>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Subscription Info */}
-        {vendor?.subscription_plan && (
-          <Card className="mb-8 border-primary/20 bg-primary/5">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <TrendingUp className="h-6 w-6 text-primary" />
-                  <div>
-                    <p className="font-medium">
-                      {isRTL ? 'الباقة الحالية:' : 'Current Plan:'} {vendor.subscription_plan}
-                    </p>
-                    {vendor.subscription_expires_at && (
-                      <p className="text-sm text-muted-foreground">
-                        {isRTL ? 'تنتهي في:' : 'Expires:'} {format(new Date(vendor.subscription_expires_at), 'PPP')}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <Button variant="outline" size="sm" asChild>
-                  <Link to="/vendor/subscription">{isRTL ? 'ترقية' : 'Upgrade'}</Link>
+                <Button asChild>
+                  <Link to="/vendor/kyc">
+                    {isRTL ? 'إكمال التوثيق' : 'Complete Verification'}
+                    <Arrow className="ms-2 h-4 w-4" />
+                  </Link>
                 </Button>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {statCards.map((stat, index) => (
-            <Card key={index}>
+        {/* Widgets Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <SubscriptionWidget 
+            plan={vendor?.subscription_plan || 'basic'} 
+            daysRemaining={daysRemaining}
+            isActive={daysRemaining > 0}
+          />
+          <TeamWidget 
+            totalProviders={0} 
+            activeProviders={0} 
+            pendingVerification={0} 
+          />
+          <RevenueWidget 
+            thisMonth={stats?.totalRevenue || 0} 
+            lastMonth={0} 
+            growth={0} 
+          />
+          <ServicesStatsWidget 
+            totalServices={0} 
+            activeServices={0} 
+            avgRating={vendor?.rating || 0} 
+          />
+        </div>
+
+        {/* Quick Links */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Link to="/vendor/bookings">
+            <Card className="h-full hover:border-primary transition-colors cursor-pointer">
               <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">{stat.title}</p>
-                    <p className="text-2xl font-bold">{stat.value}</p>
+                <div className="flex items-center gap-4">
+                  <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                    <Calendar className="h-5 w-5" />
                   </div>
-                  <div className={`p-3 rounded-lg ${stat.bgColor} ${stat.color}`}>
-                    {stat.icon}
+                  <div>
+                    <h3 className="font-medium">{t.nav.bookings}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {isRTL ? 'إدارة الحجوزات' : 'Manage bookings'}
+                    </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-          ))}
+          </Link>
+          <Link to="/vendor/services">
+            <Card className="h-full hover:border-primary transition-colors cursor-pointer">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-2 rounded-lg bg-secondary/10 text-secondary">
+                    <FileText className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium">{t.nav.services}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {isRTL ? 'إدارة الخدمات' : 'Manage services'}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link to="/vendor/providers">
+            <Card className="h-full hover:border-primary transition-colors cursor-pointer">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-2 rounded-lg bg-accent/10 text-accent">
+                    <Users className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium">{isRTL ? 'الفريق' : 'Team'}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {isRTL ? 'إدارة مقدمي الخدمات' : 'Manage providers'}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link to="/vendor/subscription">
+            <Card className="h-full hover:border-primary transition-colors cursor-pointer">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-2 rounded-lg bg-purple-500/10 text-purple-500">
+                    <CreditCard className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium">{isRTL ? 'الاشتراك' : 'Subscription'}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {isRTL ? 'إدارة الخطة' : 'Manage plan'}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Recent Bookings */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>{isRTL ? 'الحجوزات الأخيرة' : 'Recent Bookings'}</CardTitle>
-                  <CardDescription>
-                    {isRTL ? 'آخر طلبات الحجز' : 'Latest booking requests'}
-                  </CardDescription>
-                </div>
-                <Button variant="outline" size="sm" asChild>
-                  <Link to="/vendor/bookings">{isRTL ? 'عرض الكل' : 'View All'}</Link>
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {bookings.length > 0 ? (
-                <div className="space-y-4">
-                  {bookings.slice(0, 5).map((booking) => (
-                    <div key={booking.id} className="flex items-center justify-between p-3 rounded-lg border">
-                      <div>
-                        <p className="font-medium text-sm">
-                          {booking.service?.title || 'Service'}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {booking.beneficiary?.full_name || 'Beneficiary'}
-                        </p>
-                        {booking.scheduled_date && (
-                          <p className="text-xs text-muted-foreground">
-                            {format(new Date(booking.scheduled_date), 'PP')}
-                          </p>
-                        )}
-                      </div>
-                      <div className="text-end">
-                        {getStatusBadge(booking.status)}
-                        {booking.total_amount && (
-                          <p className="text-sm font-medium mt-1">
-                            SAR {booking.total_amount}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <Calendar className="h-10 w-10 text-muted-foreground mb-3" />
-                  <p className="text-muted-foreground">
-                    {isRTL ? 'لا توجد حجوزات بعد' : 'No bookings yet'}
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>{isRTL ? 'إجراءات سريعة' : 'Quick Actions'}</CardTitle>
-              <CardDescription>
-                {isRTL ? 'إدارة وكالتك' : 'Manage your agency'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4">
-              <Button variant="outline" className="h-20 flex-col gap-2" asChild>
-                <Link to="/vendor/providers">
-                  <Users className="h-6 w-6" />
-                  <span className="text-sm">{isRTL ? 'مقدمو الخدمات' : 'Providers'}</span>
-                </Link>
-              </Button>
-              <Button variant="outline" className="h-20 flex-col gap-2" asChild>
-                <Link to="/vendor/services">
-                  <FileText className="h-6 w-6" />
-                  <span className="text-sm">{isRTL ? 'الخدمات' : 'Services'}</span>
-                </Link>
-              </Button>
-              <Button variant="outline" className="h-20 flex-col gap-2" asChild>
-                <Link to="/vendor/bookings">
-                  <Calendar className="h-6 w-6" />
-                  <span className="text-sm">{isRTL ? 'الحجوزات' : 'Bookings'}</span>
-                </Link>
-              </Button>
-              <Button variant="outline" className="h-20 flex-col gap-2" asChild>
-                <Link to="/vendor/profile">
-                  <Building2 className="h-6 w-6" />
-                  <span className="text-sm">{isRTL ? 'الملف التعريفي' : 'Profile'}</span>
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Recent Activity */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{isRTL ? 'النشاط الأخير' : 'Recent Activity'}</CardTitle>
+            <CardDescription>
+              {isRTL ? 'آخر الأحداث في شركتك' : 'Latest events in your company'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
+              <Calendar className="h-12 w-12 mb-4 opacity-50" />
+              <p>{isRTL ? 'لا يوجد نشاط بعد' : 'No activity yet'}</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
-    </MainLayout>
+    </DashboardLayout>
   );
 }
