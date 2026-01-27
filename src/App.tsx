@@ -33,6 +33,7 @@ import AdminManagementPage from "./pages/super-admin/AdminManagementPage";
 import VendorBookingsPage from "./pages/vendor/VendorBookingsPage";
 import VendorServicesPage from "./pages/vendor/VendorServicesPage";
 import VendorSubscriptionPage from "./pages/vendor/VendorSubscriptionPage";
+import VendorKycPage from "./pages/vendor/VendorKycPage";
 
 const queryClient = new QueryClient();
 
@@ -111,6 +112,7 @@ function AppRoutes() {
       
       {/* Vendor Routes */}
       <Route path="/vendor" element={<ProtectedRoute allowedRoles={['vendor', 'admin', 'super_admin']}><VendorDashboard /></ProtectedRoute>} />
+      <Route path="/vendor/kyc" element={<ProtectedRoute allowedRoles={['vendor', 'admin', 'super_admin']}><VendorKycPage /></ProtectedRoute>} />
       <Route path="/vendor/bookings" element={<ProtectedRoute allowedRoles={['vendor', 'admin', 'super_admin']}><VendorBookingsPage /></ProtectedRoute>} />
       <Route path="/vendor/services" element={<ProtectedRoute allowedRoles={['vendor', 'admin', 'super_admin']}><VendorServicesPage /></ProtectedRoute>} />
       <Route path="/vendor/subscription" element={<ProtectedRoute allowedRoles={['vendor', 'admin', 'super_admin']}><VendorSubscriptionPage /></ProtectedRoute>} />
