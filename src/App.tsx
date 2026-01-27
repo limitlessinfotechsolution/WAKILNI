@@ -26,9 +26,13 @@ import UsersManagementPage from "./pages/admin/UsersManagementPage";
 import VendorsManagementPage from "./pages/admin/VendorsManagementPage";
 import ProvidersManagementPage from "./pages/admin/ProvidersManagementPage";
 import DonationsPage from "./pages/admin/DonationsPage";
+import BookingAllocationPage from "./pages/admin/BookingAllocationPage";
 import SystemSettingsPage from "./pages/super-admin/SystemSettingsPage";
 import AuditLogsPage from "./pages/super-admin/AuditLogsPage";
 import AdminManagementPage from "./pages/super-admin/AdminManagementPage";
+import VendorBookingsPage from "./pages/vendor/VendorBookingsPage";
+import VendorServicesPage from "./pages/vendor/VendorServicesPage";
+import VendorSubscriptionPage from "./pages/vendor/VendorSubscriptionPage";
 
 const queryClient = new QueryClient();
 
@@ -107,6 +111,9 @@ function AppRoutes() {
       
       {/* Vendor Routes */}
       <Route path="/vendor" element={<ProtectedRoute allowedRoles={['vendor', 'admin', 'super_admin']}><VendorDashboard /></ProtectedRoute>} />
+      <Route path="/vendor/bookings" element={<ProtectedRoute allowedRoles={['vendor', 'admin', 'super_admin']}><VendorBookingsPage /></ProtectedRoute>} />
+      <Route path="/vendor/services" element={<ProtectedRoute allowedRoles={['vendor', 'admin', 'super_admin']}><VendorServicesPage /></ProtectedRoute>} />
+      <Route path="/vendor/subscription" element={<ProtectedRoute allowedRoles={['vendor', 'admin', 'super_admin']}><VendorSubscriptionPage /></ProtectedRoute>} />
       
       {/* Admin Routes */}
       <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><AdminDashboard /></ProtectedRoute>} />
@@ -115,6 +122,7 @@ function AppRoutes() {
       <Route path="/admin/vendors" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><VendorsManagementPage /></ProtectedRoute>} />
       <Route path="/admin/kyc" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><KycQueuePage /></ProtectedRoute>} />
       <Route path="/admin/donations" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><DonationsPage /></ProtectedRoute>} />
+      <Route path="/admin/allocations" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><BookingAllocationPage /></ProtectedRoute>} />
       
       {/* Super Admin Routes */}
       <Route path="/super-admin/settings" element={<ProtectedRoute allowedRoles={['super_admin']}><SystemSettingsPage /></ProtectedRoute>} />

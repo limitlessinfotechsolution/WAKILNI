@@ -93,9 +93,9 @@ export default function AdminDashboard() {
       icon: <Heart className="h-5 w-5" />,
     },
     {
-      title: isRTL ? 'إدارة الحجوزات' : 'Booking Management',
-      description: isRTL ? 'عرض وتخصيص الحجوزات' : 'View and allocate bookings',
-      href: '/admin/bookings',
+      title: isRTL ? 'توزيع الحجوزات' : 'Booking Allocation',
+      description: isRTL ? 'تعيين الحجوزات لمقدمي الخدمات' : 'Assign bookings to providers',
+      href: '/admin/allocations',
       icon: <Calendar className="h-5 w-5" />,
       badge: stats.pendingBookings,
     },
