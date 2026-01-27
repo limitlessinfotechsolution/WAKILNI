@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_role: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          new_values: Json | null
+          old_values: Json | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_role?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          new_values?: Json | null
+          old_values?: Json | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_role?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          new_values?: Json | null
+          old_values?: Json | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       beneficiaries: {
         Row: {
           created_at: string
@@ -164,6 +209,164 @@ export type Database = {
           },
         ]
       }
+      charity_requests: {
+        Row: {
+          approved_amount: number | null
+          beneficiary_id: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          priority: number | null
+          reason: string | null
+          reason_ar: string | null
+          requested_amount: number
+          requester_id: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          service_type: Database["public"]["Enums"]["service_type"]
+          status: string | null
+          supporting_documents: Json | null
+          updated_at: string
+        }
+        Insert: {
+          approved_amount?: number | null
+          beneficiary_id?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          priority?: number | null
+          reason?: string | null
+          reason_ar?: string | null
+          requested_amount: number
+          requester_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          service_type: Database["public"]["Enums"]["service_type"]
+          status?: string | null
+          supporting_documents?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          approved_amount?: number | null
+          beneficiary_id?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          priority?: number | null
+          reason?: string | null
+          reason_ar?: string | null
+          requested_amount?: number
+          requester_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          service_type?: Database["public"]["Enums"]["service_type"]
+          status?: string | null
+          supporting_documents?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "charity_requests_beneficiary_id_fkey"
+            columns: ["beneficiary_id"]
+            isOneToOne: false
+            referencedRelation: "beneficiaries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      donation_allocations: {
+        Row: {
+          allocated_at: string
+          amount: number
+          charity_request_id: string
+          donation_id: string
+          id: string
+        }
+        Insert: {
+          allocated_at?: string
+          amount: number
+          charity_request_id: string
+          donation_id: string
+          id?: string
+        }
+        Update: {
+          allocated_at?: string
+          amount?: number
+          charity_request_id?: string
+          donation_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donation_allocations_charity_request_id_fkey"
+            columns: ["charity_request_id"]
+            isOneToOne: false
+            referencedRelation: "charity_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donation_allocations_donation_id_fkey"
+            columns: ["donation_id"]
+            isOneToOne: false
+            referencedRelation: "donations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      donations: {
+        Row: {
+          allocated_amount: number | null
+          amount: number
+          created_at: string
+          currency: string | null
+          donor_email: string | null
+          donor_id: string | null
+          donor_name: string | null
+          id: string
+          is_anonymous: boolean | null
+          message: string | null
+          payment_method: string | null
+          payment_reference: string | null
+          payment_status: string | null
+          remaining_amount: number | null
+          updated_at: string
+        }
+        Insert: {
+          allocated_amount?: number | null
+          amount: number
+          created_at?: string
+          currency?: string | null
+          donor_email?: string | null
+          donor_id?: string | null
+          donor_name?: string | null
+          id?: string
+          is_anonymous?: boolean | null
+          message?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          payment_status?: string | null
+          remaining_amount?: number | null
+          updated_at?: string
+        }
+        Update: {
+          allocated_amount?: number | null
+          amount?: number
+          created_at?: string
+          currency?: string | null
+          donor_email?: string | null
+          donor_id?: string | null
+          donor_name?: string | null
+          id?: string
+          is_anonymous?: boolean | null
+          message?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          payment_status?: string | null
+          remaining_amount?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           booking_id: string | null
@@ -241,6 +444,57 @@ export type Database = {
         }
         Relationships: []
       }
+      provider_bids: {
+        Row: {
+          bid_amount: number
+          booking_id: string
+          created_at: string
+          currency: string | null
+          id: string
+          message: string | null
+          provider_id: string
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          bid_amount: number
+          booking_id: string
+          created_at?: string
+          currency?: string | null
+          id?: string
+          message?: string | null
+          provider_id: string
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bid_amount?: number
+          booking_id?: string
+          created_at?: string
+          currency?: string | null
+          id?: string
+          message?: string | null
+          provider_id?: string
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_bids_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provider_bids_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       providers: {
         Row: {
           bio: string | null
@@ -251,11 +505,14 @@ export type Database = {
           created_at: string
           id: string
           is_active: boolean | null
+          is_suspended: boolean | null
           kyc_notes: string | null
           kyc_reviewed_at: string | null
           kyc_status: Database["public"]["Enums"]["kyc_status"] | null
           kyc_submitted_at: string | null
+          nationality: string | null
           rating: number | null
+          suspension_reason: string | null
           total_bookings: number | null
           total_reviews: number | null
           updated_at: string
@@ -270,11 +527,14 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean | null
+          is_suspended?: boolean | null
           kyc_notes?: string | null
           kyc_reviewed_at?: string | null
           kyc_status?: Database["public"]["Enums"]["kyc_status"] | null
           kyc_submitted_at?: string | null
+          nationality?: string | null
           rating?: number | null
+          suspension_reason?: string | null
           total_bookings?: number | null
           total_reviews?: number | null
           updated_at?: string
@@ -289,11 +549,14 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean | null
+          is_suspended?: boolean | null
           kyc_notes?: string | null
           kyc_reviewed_at?: string | null
           kyc_status?: Database["public"]["Enums"]["kyc_status"] | null
           kyc_submitted_at?: string | null
+          nationality?: string | null
           rating?: number | null
+          suspension_reason?: string | null
           total_bookings?: number | null
           total_reviews?: number | null
           updated_at?: string
@@ -345,6 +608,76 @@ export type Database = {
             columns: ["provider_id"]
             isOneToOne: false
             referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_allocations: {
+        Row: {
+          accepted_at: string | null
+          allocation_type: string | null
+          assigned_at: string | null
+          assigned_by: string | null
+          booking_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          priority: number | null
+          provider_id: string | null
+          status: string | null
+          updated_at: string
+          vendor_id: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          allocation_type?: string | null
+          assigned_at?: string | null
+          assigned_by?: string | null
+          booking_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          priority?: number | null
+          provider_id?: string | null
+          status?: string | null
+          updated_at?: string
+          vendor_id?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          allocation_type?: string | null
+          assigned_at?: string | null
+          assigned_by?: string | null
+          booking_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          priority?: number | null
+          provider_id?: string | null
+          status?: string | null
+          updated_at?: string
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_allocations_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_allocations_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_allocations_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
             referencedColumns: ["id"]
           },
         ]
@@ -407,6 +740,90 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      system_notices: {
+        Row: {
+          content: string
+          content_ar: string | null
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          notice_type: string | null
+          priority: number | null
+          starts_at: string | null
+          target_roles: Json | null
+          title: string
+          title_ar: string | null
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          content_ar?: string | null
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          notice_type?: string | null
+          priority?: number | null
+          starts_at?: string | null
+          target_roles?: Json | null
+          title: string
+          title_ar?: string | null
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          content_ar?: string | null
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          notice_type?: string | null
+          priority?: number | null
+          starts_at?: string | null
+          target_roles?: Json | null
+          title?: string
+          title_ar?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      system_settings: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value: Json
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
       }
       transactions: {
         Row: {
@@ -473,6 +890,90 @@ export type Database = {
         }
         Relationships: []
       }
+      vendors: {
+        Row: {
+          address: string | null
+          address_ar: string | null
+          commercial_registration: string | null
+          company_name: string
+          company_name_ar: string | null
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          is_saudi_registered: boolean | null
+          is_suspended: boolean | null
+          kyc_notes: string | null
+          kyc_reviewed_at: string | null
+          kyc_status: Database["public"]["Enums"]["kyc_status"] | null
+          kyc_submitted_at: string | null
+          logo_url: string | null
+          rating: number | null
+          subscription_expires_at: string | null
+          subscription_plan: string | null
+          suspension_reason: string | null
+          tax_number: string | null
+          total_bookings: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          address_ar?: string | null
+          commercial_registration?: string | null
+          company_name: string
+          company_name_ar?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          is_saudi_registered?: boolean | null
+          is_suspended?: boolean | null
+          kyc_notes?: string | null
+          kyc_reviewed_at?: string | null
+          kyc_status?: Database["public"]["Enums"]["kyc_status"] | null
+          kyc_submitted_at?: string | null
+          logo_url?: string | null
+          rating?: number | null
+          subscription_expires_at?: string | null
+          subscription_plan?: string | null
+          suspension_reason?: string | null
+          tax_number?: string | null
+          total_bookings?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          address_ar?: string | null
+          commercial_registration?: string | null
+          company_name?: string
+          company_name_ar?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          is_saudi_registered?: boolean | null
+          is_suspended?: boolean | null
+          kyc_notes?: string | null
+          kyc_reviewed_at?: string | null
+          kyc_status?: Database["public"]["Enums"]["kyc_status"] | null
+          kyc_submitted_at?: string | null
+          logo_url?: string | null
+          rating?: number | null
+          subscription_expires_at?: string | null
+          subscription_plan?: string | null
+          suspension_reason?: string | null
+          tax_number?: string | null
+          total_bookings?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -489,9 +990,21 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      log_audit_action: {
+        Args: {
+          _action: string
+          _entity_id?: string
+          _entity_type: string
+          _metadata?: Json
+          _new_values?: Json
+          _old_values?: Json
+        }
+        Returns: string
+      }
     }
     Enums: {
-      app_role: "admin" | "traveler" | "provider"
+      app_role: "admin" | "traveler" | "provider" | "super_admin" | "vendor"
       beneficiary_status: "deceased" | "sick" | "elderly" | "disabled" | "other"
       booking_status:
         | "pending"
@@ -629,7 +1142,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "traveler", "provider"],
+      app_role: ["admin", "traveler", "provider", "super_admin", "vendor"],
       beneficiary_status: ["deceased", "sick", "elderly", "disabled", "other"],
       booking_status: [
         "pending",
