@@ -140,12 +140,15 @@ export default function ServicesPage() {
         </div>
         {service.provider && (
           <CardDescription className="flex items-center gap-2 mt-2">
-            <span className={cn(isRTL && 'font-arabic')}>
+            <Link 
+              to={`/providers/${service.provider.id}`}
+              className={cn('hover:underline hover:text-primary transition-colors', isRTL && 'font-arabic')}
+            >
               {isRTL && service.provider.company_name_ar 
                 ? service.provider.company_name_ar 
                 : service.provider.company_name
               }
-            </span>
+            </Link>
             {service.provider.rating && (
               <span className="flex items-center gap-1 text-amber-500">
                 <Star className="h-3.5 w-3.5 fill-current" />

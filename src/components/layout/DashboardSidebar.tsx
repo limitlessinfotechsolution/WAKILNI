@@ -28,7 +28,7 @@ const travelerNav: NavItem[] = [
 
 const providerNav: NavItem[] = [
   { title: 'Dashboard', titleAr: 'لوحة التحكم', href: '/provider', icon: Home },
-  { title: 'Bookings', titleAr: 'الحجوزات', href: '/provider/bookings', icon: Calendar },
+  { title: 'Calendar', titleAr: 'التقويم', href: '/provider/calendar', icon: Calendar },
   { title: 'Services', titleAr: 'الخدمات', href: '/provider/services', icon: FileText },
   { title: 'Reviews', titleAr: 'المراجعات', href: '/provider/reviews', icon: Star },
   { title: 'Verification', titleAr: 'التحقق', href: '/provider/kyc', icon: Shield },

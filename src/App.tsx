@@ -39,6 +39,8 @@ import VendorSubscriptionPage from "./pages/vendor/VendorSubscriptionPage";
 import VendorKycPage from "./pages/vendor/VendorKycPage";
 import ProfileSettingsPage from "./pages/settings/ProfileSettingsPage";
 import ServicesPage from "./pages/services/ServicesPage";
+import CalendarPage from "./pages/provider/CalendarPage";
+import ProviderProfilePage from "./pages/providers/ProviderProfilePage";
 
 const queryClient = new QueryClient();
 
@@ -117,9 +119,13 @@ function AppRoutes() {
       
       {/* Provider Routes */}
       <Route path="/provider" element={<ProtectedRoute allowedRoles={['provider', 'admin', 'super_admin']}><ProviderDashboard /></ProtectedRoute>} />
+      <Route path="/provider/calendar" element={<ProtectedRoute allowedRoles={['provider', 'admin', 'super_admin']}><CalendarPage /></ProtectedRoute>} />
       <Route path="/provider/kyc" element={<ProtectedRoute allowedRoles={['provider', 'admin', 'super_admin']}><KycPage /></ProtectedRoute>} />
       <Route path="/provider/services" element={<ProtectedRoute allowedRoles={['provider', 'admin', 'super_admin']}><ProviderServicesPage /></ProtectedRoute>} />
       <Route path="/provider/reviews" element={<ProtectedRoute allowedRoles={['provider', 'admin', 'super_admin']}><ReviewsPage /></ProtectedRoute>} />
+      
+      {/* Public Provider Profile */}
+      <Route path="/providers/:id" element={<ProviderProfilePage />} />
       
       {/* Vendor Routes */}
       <Route path="/vendor" element={<ProtectedRoute allowedRoles={['vendor', 'admin', 'super_admin']}><VendorDashboard /></ProtectedRoute>} />
