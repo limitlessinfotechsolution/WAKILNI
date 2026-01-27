@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, User, LogOut, LayoutDashboard, Settings } from 'lucide-react';
+import { Menu, X, User, LogOut, LayoutDashboard, Settings, Heart } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -13,6 +13,7 @@ import {
 import { useLanguage } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
 import { LanguageToggle } from '@/components/LanguageToggle';
+import { AdminNotifications } from '@/components/admin/AdminNotifications';
 
 export function Header() {
   const { t, isRTL } = useLanguage();
@@ -26,10 +27,20 @@ export function Header() {
   };
 
   const getDashboardLink = () => {
-    if (role === 'admin') return '/admin';
-    if (role === 'provider') return '/provider';
-    return '/dashboard';
+    switch (role) {
+      case 'admin':
+      case 'super_admin':
+        return '/admin';
+      case 'provider':
+        return '/provider';
+      case 'vendor':
+        return '/vendor';
+      default:
+        return '/dashboard';
+    }
   };
+
+  const isAdmin = role === 'admin' || role === 'super_admin';
 
   const getInitials = () => {
     if (profile?.full_name) {
@@ -64,6 +75,13 @@ export function Header() {
           >
             {t.nav.services}
           </Link>
+          <Link
+            to="/donate"
+            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+          >
+            <Heart className="h-4 w-4" />
+            {isRTL ? 'تبرع' : 'Donate'}
+          </Link>
           {user && (
             <>
               <Link
@@ -83,8 +101,9 @@ export function Header() {
         </nav>
 
         {/* Right Side Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <LanguageToggle />
+          {isAdmin && <AdminNotifications />}
 
           {user ? (
             <DropdownMenu>

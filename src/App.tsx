@@ -12,6 +12,8 @@ import LoginPage from "./pages/auth/LoginPage";
 import SignupPage from "./pages/auth/SignupPage";
 import TravelerDashboard from "./pages/dashboard/TravelerDashboard";
 import ProviderDashboard from "./pages/dashboard/ProviderDashboard";
+import VendorDashboard from "./pages/dashboard/VendorDashboard";
+import DonatePage from "./pages/donate/DonatePage";
 import AdminDashboard from "./pages/dashboard/AdminDashboard";
 import NotFound from "./pages/NotFound";
 import BeneficiariesPage from "./pages/beneficiaries/BeneficiariesPage";
@@ -68,10 +70,17 @@ function DashboardRouter() {
     );
   }
 
-  if (role === 'super_admin' || role === 'admin') return <Navigate to="/admin" replace />;
-  if (role === 'provider') return <Navigate to="/provider" replace />;
-  if (role === 'vendor') return <Navigate to="/vendor" replace />;
-  return <TravelerDashboard />;
+  switch (role) {
+    case 'super_admin':
+    case 'admin':
+      return <Navigate to="/admin" replace />;
+    case 'provider':
+      return <Navigate to="/provider" replace />;
+    case 'vendor':
+      return <Navigate to="/vendor" replace />;
+    default:
+      return <TravelerDashboard />;
+  }
 }
 
 function AppRoutes() {
@@ -81,6 +90,7 @@ function AppRoutes() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
+      <Route path="/donate" element={<DonatePage />} />
       
       {/* Dashboard Router */}
       <Route path="/dashboard" element={<ProtectedRoute><DashboardRouter /></ProtectedRoute>} />
@@ -94,6 +104,9 @@ function AppRoutes() {
       <Route path="/provider" element={<ProtectedRoute allowedRoles={['provider', 'admin', 'super_admin']}><ProviderDashboard /></ProtectedRoute>} />
       <Route path="/provider/kyc" element={<ProtectedRoute allowedRoles={['provider', 'admin', 'super_admin']}><KycPage /></ProtectedRoute>} />
       <Route path="/provider/services" element={<ProtectedRoute allowedRoles={['provider', 'admin', 'super_admin']}><ServicesPage /></ProtectedRoute>} />
+      
+      {/* Vendor Routes */}
+      <Route path="/vendor" element={<ProtectedRoute allowedRoles={['vendor', 'admin', 'super_admin']}><VendorDashboard /></ProtectedRoute>} />
       
       {/* Admin Routes */}
       <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><AdminDashboard /></ProtectedRoute>} />
