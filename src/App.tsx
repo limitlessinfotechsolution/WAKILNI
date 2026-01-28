@@ -31,6 +31,7 @@ import VendorsManagementPage from "./pages/admin/VendorsManagementPage";
 import ProvidersManagementPage from "./pages/admin/ProvidersManagementPage";
 import DonationsPage from "./pages/admin/DonationsPage";
 import BookingAllocationPage from "./pages/admin/BookingAllocationPage";
+import SubscriptionsPage from "./pages/admin/SubscriptionsPage";
 import SystemSettingsPage from "./pages/super-admin/SystemSettingsPage";
 import AuditLogsPage from "./pages/super-admin/AuditLogsPage";
 import AdminManagementPage from "./pages/super-admin/AdminManagementPage";
@@ -162,12 +163,14 @@ function AppRoutes() {
       <Route path="/admin/kyc" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><KycQueuePage /></ProtectedRoute>} />
       <Route path="/admin/donations" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><DonationsPage /></ProtectedRoute>} />
       <Route path="/admin/allocations" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><BookingAllocationPage /></ProtectedRoute>} />
+      <Route path="/admin/subscriptions" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><SubscriptionsPage /></ProtectedRoute>} />
       
       {/* Super Admin Routes */}
       <Route path="/super-admin/settings" element={<ProtectedRoute allowedRoles={['super_admin']}><SystemSettingsPage /></ProtectedRoute>} />
       <Route path="/super-admin/audit" element={<ProtectedRoute allowedRoles={['super_admin']}><AuditLogsPage /></ProtectedRoute>} />
       <Route path="/super-admin/admins" element={<ProtectedRoute allowedRoles={['super_admin']}><AdminManagementPage /></ProtectedRoute>} />
       <Route path="/super-admin/analytics" element={<ProtectedRoute allowedRoles={['super_admin']}><AnalyticsPage /></ProtectedRoute>} />
+      <Route path="/super-admin/subscriptions" element={<ProtectedRoute allowedRoles={['super_admin']}><SubscriptionsPage /></ProtectedRoute>} />
 
       {/* Catch-all */}
       <Route path="*" element={<NotFound />} />

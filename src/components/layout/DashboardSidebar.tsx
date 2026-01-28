@@ -49,12 +49,14 @@ const adminNav: NavItem[] = [
   { title: 'Providers', titleAr: 'مقدمو الخدمات', href: '/admin/providers', icon: UserCheck },
   { title: 'Vendors', titleAr: 'الشركات', href: '/admin/vendors', icon: Building2 },
   { title: 'KYC Queue', titleAr: 'طابور التحقق', href: '/admin/kyc', icon: Shield },
+  { title: 'Subscriptions', titleAr: 'الاشتراكات', href: '/admin/subscriptions', icon: CreditCard },
   { title: 'Donations', titleAr: 'التبرعات', href: '/admin/donations', icon: Heart },
   { title: 'Allocations', titleAr: 'التخصيصات', href: '/admin/allocations', icon: BarChart3 },
 ];
 
 const superAdminNav: NavItem[] = [
   { title: 'Analytics', titleAr: 'التحليلات', href: '/super-admin/analytics', icon: BarChart3 },
+  { title: 'Subscriptions', titleAr: 'الاشتراكات', href: '/super-admin/subscriptions', icon: DollarSign },
   { title: 'System Settings', titleAr: 'إعدادات النظام', href: '/super-admin/settings', icon: Settings },
   { title: 'Audit Logs', titleAr: 'سجل التدقيق', href: '/super-admin/audit', icon: Clock },
   { title: 'Admin Management', titleAr: 'إدارة المشرفين', href: '/super-admin/admins', icon: Shield },
