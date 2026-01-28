@@ -183,6 +183,16 @@ export function useOfflineSync() {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
+    // Register for background sync if supported
+    if ('serviceWorker' in navigator && 'SyncManager' in window) {
+      navigator.serviceWorker.ready.then((registration) => {
+        // Register a sync event for bookings
+        (registration as any).sync?.register('sync-bookings').catch((err: Error) => {
+          console.log('Background sync registration failed:', err);
+        });
+      });
+    }
+
     // Initial sync check
     if (isOnline && user) {
       syncAll();
