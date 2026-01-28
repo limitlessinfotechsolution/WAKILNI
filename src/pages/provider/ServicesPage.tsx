@@ -1,8 +1,11 @@
 import { useState } from 'react';
-import { Plus, Package, MoreVertical, Edit, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Plus, Package, MoreVertical, Edit, Trash2, Eye, EyeOff, DollarSign, Star, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { GlassCard } from '@/components/cards';
+import { StatCard } from '@/components/cards';
+import { FloatingActionButton } from '@/components/navigation';
 import {
   Dialog,
   DialogContent,
@@ -26,12 +29,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { MainLayout } from '@/components/layout';
+import { DashboardLayout } from '@/components/layout';
 import { ServiceForm } from '@/components/provider/ServiceForm';
 import { useProviderServices, type Service, type ServiceType } from '@/hooks/useProviderServices';
 import { useProvider } from '@/hooks/useProvider';
 import { useLanguage } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
+import { PullToRefresh } from '@/components/ui/pull-to-refresh';
 
 const serviceTypeConfig: Record<ServiceType, { icon: string; color: string }> = {
   umrah: { icon: '🕋', color: 'bg-primary/10 text-primary' },
@@ -42,12 +46,19 @@ const serviceTypeConfig: Record<ServiceType, { icon: string; color: string }> = 
 export default function ServicesPage() {
   const { t, isRTL } = useLanguage();
   const { provider, isLoading: isProviderLoading } = useProvider();
-  const { services, isLoading, addService, updateService, deleteService, toggleServiceActive } = useProviderServices();
+  const { services, isLoading, addService, updateService, deleteService, toggleServiceActive, refetch } = useProviderServices();
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Stats
+  const stats = {
+    total: services.length,
+    active: services.filter(s => s.is_active).length,
+    avgPrice: services.length > 0 ? Math.round(services.reduce((sum, s) => sum + s.price, 0) / services.length) : 0,
+  };
 
   const handleOpenForm = (service?: Service) => {
     setEditingService(service || null);
@@ -98,21 +109,21 @@ export default function ServicesPage() {
 
   if (isProviderLoading) {
     return (
-      <MainLayout>
-        <div className="container py-8 px-4">
+      <DashboardLayout>
+        <div className="p-4 md:p-6">
           <div className="flex items-center justify-center h-64">
             <div className="animate-pulse text-muted-foreground">{t.common.loading}</div>
           </div>
         </div>
-      </MainLayout>
+      </DashboardLayout>
     );
   }
 
   if (!isApproved) {
     return (
-      <MainLayout>
-        <div className="container py-8 px-4">
-          <div className="flex flex-col items-center justify-center h-64 text-center">
+      <DashboardLayout>
+        <div className="p-4 md:p-6">
+          <GlassCard className="flex flex-col items-center justify-center py-16 text-center">
             <Package className="h-12 w-12 text-muted-foreground mb-4" />
             <h2 className="text-xl font-semibold mb-2">
               {isRTL ? 'التحقق مطلوب' : 'Verification Required'}
@@ -127,199 +138,238 @@ export default function ServicesPage() {
                 {isRTL ? 'إكمال التحقق' : 'Complete Verification'}
               </a>
             </Button>
-          </div>
+          </GlassCard>
         </div>
-      </MainLayout>
+      </DashboardLayout>
     );
   }
 
   return (
-    <MainLayout>
-      <div className="container py-8 px-4">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-          <div>
-            <h1 className={`text-3xl font-bold mb-2 ${isRTL ? 'font-arabic' : ''}`}>
-              {isRTL ? 'خدماتي' : 'My Services'}
-            </h1>
-            <p className="text-muted-foreground">
-              {isRTL 
-                ? 'إدارة خدمات الحج والعمرة التي تقدمها'
-                : 'Manage your pilgrimage service offerings'}
-            </p>
+    <DashboardLayout>
+      <PullToRefresh onRefresh={refetch} className="h-full">
+        <div className="p-4 md:p-6 space-y-6">
+          {/* Header */}
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg">
+              <Package className="h-5 w-5" />
+            </div>
+            <div>
+              <h1 className={cn('text-xl md:text-2xl font-bold', isRTL && 'font-arabic')}>
+                {isRTL ? 'خدماتي' : 'My Services'}
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                {isRTL 
+                  ? 'إدارة خدمات الحج والعمرة التي تقدمها'
+                  : 'Manage your pilgrimage service offerings'}
+              </p>
+            </div>
           </div>
-          <Button onClick={() => handleOpenForm()} className="gap-2">
-            <Plus className="h-4 w-4" />
-            {isRTL ? 'إضافة خدمة' : 'Add Service'}
-          </Button>
-        </div>
 
-        {/* Services List */}
-        {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-48 bg-muted animate-pulse rounded-lg" />
-            ))}
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-3">
+            <StatCard
+              title={isRTL ? 'إجمالي الخدمات' : 'Total Services'}
+              value={stats.total}
+              icon={Package}
+              className="bg-gradient-to-br from-blue-500/10 to-blue-500/5"
+            />
+            <StatCard
+              title={isRTL ? 'نشطة' : 'Active'}
+              value={stats.active}
+              icon={Eye}
+              className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/5"
+            />
+            <StatCard
+              title={isRTL ? 'متوسط السعر' : 'Avg Price'}
+              value={stats.avgPrice}
+              subtitle="SAR"
+              icon={DollarSign}
+              className="bg-gradient-to-br from-amber-500/10 to-amber-500/5"
+            />
           </div>
-        ) : services.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <Package className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="font-semibold text-lg mb-1">
-              {isRTL ? 'لا توجد خدمات' : 'No Services Yet'}
-            </h3>
-            <p className="text-muted-foreground mb-4">
-              {isRTL ? 'أضف خدمتك الأولى للبدء' : 'Add your first service to get started'}
-            </p>
+
+          {/* Desktop Add Button */}
+          <div className="hidden md:flex justify-end">
             <Button onClick={() => handleOpenForm()} className="gap-2">
               <Plus className="h-4 w-4" />
               {isRTL ? 'إضافة خدمة' : 'Add Service'}
             </Button>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {services.map((service) => {
-              const config = serviceTypeConfig[service.service_type as ServiceType];
-              
-              return (
-                <Card 
-                  key={service.id} 
-                  className={cn(
-                    'hover:shadow-md transition-shadow',
-                    !service.is_active && 'opacity-60'
-                  )}
-                >
-                  <CardContent className="pt-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className={cn('text-3xl p-2 rounded-lg', config.color)}>
-                          {config.icon}
+
+          {/* Services List */}
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-48 bg-muted animate-pulse rounded-lg" />
+              ))}
+            </div>
+          ) : services.length === 0 ? (
+            <GlassCard className="flex flex-col items-center justify-center py-16 text-center">
+              <Package className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="font-semibold text-lg mb-1">
+                {isRTL ? 'لا توجد خدمات' : 'No Services Yet'}
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                {isRTL ? 'أضف خدمتك الأولى للبدء' : 'Add your first service to get started'}
+              </p>
+              <Button onClick={() => handleOpenForm()} className="gap-2">
+                <Plus className="h-4 w-4" />
+                {isRTL ? 'إضافة خدمة' : 'Add Service'}
+              </Button>
+            </GlassCard>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {services.map((service) => {
+                const config = serviceTypeConfig[service.service_type as ServiceType];
+                
+                return (
+                  <GlassCard 
+                    key={service.id} 
+                    className={cn(
+                      'hover:shadow-lg transition-all active:scale-[0.98]',
+                      !service.is_active && 'opacity-60'
+                    )}
+                  >
+                    <CardContent className="pt-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className={cn('text-3xl p-2 rounded-lg', config.color)}>
+                            {config.icon}
+                          </div>
+                          <div>
+                            <h3 className="font-semibold">
+                              {isRTL ? service.title_ar || service.title : service.title}
+                            </h3>
+                            <Badge variant="outline" className="text-xs">
+                              {serviceTypeLabels[service.service_type as ServiceType]}
+                            </Badge>
+                          </div>
                         </div>
+
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleOpenForm(service)}>
+                              <Edit className="h-4 w-4 me-2" />
+                              {t.common.edit}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => toggleServiceActive(service.id, !service.is_active)}
+                            >
+                              {service.is_active ? (
+                                <>
+                                  <EyeOff className="h-4 w-4 me-2" />
+                                  {isRTL ? 'إخفاء' : 'Deactivate'}
+                                </>
+                              ) : (
+                                <>
+                                  <Eye className="h-4 w-4 me-2" />
+                                  {isRTL ? 'تفعيل' : 'Activate'}
+                                </>
+                              )}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => setDeletingId(service.id)}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 me-2" />
+                              {t.common.delete}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+
+                      <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
+                        {isRTL 
+                          ? service.description_ar || service.description
+                          : service.description}
+                      </p>
+
+                      <div className="flex items-center justify-between pt-4 border-t">
                         <div>
-                          <h3 className="font-semibold">
-                            {isRTL ? service.title_ar || service.title : service.title}
-                          </h3>
-                          <Badge variant="outline" className="text-xs">
-                            {serviceTypeLabels[service.service_type as ServiceType]}
-                          </Badge>
-                        </div>
-                      </div>
-
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleOpenForm(service)}>
-                            <Edit className="h-4 w-4 me-2" />
-                            {t.common.edit}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => toggleServiceActive(service.id, !service.is_active)}
-                          >
-                            {service.is_active ? (
-                              <>
-                                <EyeOff className="h-4 w-4 me-2" />
-                                {isRTL ? 'إخفاء' : 'Deactivate'}
-                              </>
-                            ) : (
-                              <>
-                                <Eye className="h-4 w-4 me-2" />
-                                {isRTL ? 'تفعيل' : 'Activate'}
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => setDeletingId(service.id)}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4 me-2" />
-                            {t.common.delete}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-
-                    <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
-                      {isRTL 
-                        ? service.description_ar || service.description
-                        : service.description}
-                    </p>
-
-                    <div className="flex items-center justify-between pt-4 border-t">
-                      <div>
-                        <p className="text-2xl font-bold text-primary">
-                          {formatPrice(service.price, service.currency)}
-                        </p>
-                        {service.duration_days && (
-                          <p className="text-xs text-muted-foreground">
-                            {service.duration_days} {t.services.days}
+                          <p className="text-2xl font-bold text-primary">
+                            {formatPrice(service.price, service.currency)}
                           </p>
-                        )}
+                          {service.duration_days && (
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {service.duration_days} {t.services.days}
+                            </p>
+                          )}
+                        </div>
+                        <Badge variant={service.is_active ? 'default' : 'secondary'}>
+                          {service.is_active 
+                            ? (isRTL ? 'نشط' : 'Active')
+                            : (isRTL ? 'غير نشط' : 'Inactive')}
+                        </Badge>
                       </div>
-                      <Badge variant={service.is_active ? 'default' : 'secondary'}>
-                        {service.is_active 
-                          ? (isRTL ? 'نشط' : 'Active')
-                          : (isRTL ? 'غير نشط' : 'Inactive')}
-                      </Badge>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
+                    </CardContent>
+                  </GlassCard>
+                );
+              })}
+            </div>
+          )}
 
-        {/* Add/Edit Dialog */}
-        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingService 
-                  ? (isRTL ? 'تعديل الخدمة' : 'Edit Service')
-                  : (isRTL ? 'إضافة خدمة جديدة' : 'Add New Service')}
-              </DialogTitle>
-              <DialogDescription>
-                {isRTL 
-                  ? 'أدخل تفاصيل الخدمة التي تقدمها'
-                  : 'Enter the details of your service offering'}
-              </DialogDescription>
-            </DialogHeader>
-            <ServiceForm
-              service={editingService}
-              onSubmit={handleSubmit}
-              onCancel={handleCloseForm}
-              isSubmitting={isSubmitting}
-            />
-          </DialogContent>
-        </Dialog>
+          {/* FAB for mobile */}
+          <FloatingActionButton
+            icon={<Plus className="h-5 w-5" />}
+            onClick={() => handleOpenForm()}
+          />
 
-        {/* Delete Confirmation */}
-        <AlertDialog open={!!deletingId} onOpenChange={() => setDeletingId(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>
-                {isRTL ? 'هل أنت متأكد؟' : 'Are you sure?'}
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                {isRTL 
-                  ? 'سيتم حذف هذه الخدمة نهائياً. لا يمكن التراجع عن هذا الإجراء.'
-                  : 'This service will be permanently deleted. This action cannot be undone.'}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
-              <AlertDialogAction 
-                onClick={handleDelete} 
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                {t.common.delete}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
-    </MainLayout>
+          {/* Add/Edit Dialog */}
+          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingService 
+                    ? (isRTL ? 'تعديل الخدمة' : 'Edit Service')
+                    : (isRTL ? 'إضافة خدمة جديدة' : 'Add New Service')}
+                </DialogTitle>
+                <DialogDescription>
+                  {isRTL 
+                    ? 'أدخل تفاصيل الخدمة التي تقدمها'
+                    : 'Enter the details of your service offering'}
+                </DialogDescription>
+              </DialogHeader>
+              <ServiceForm
+                service={editingService}
+                onSubmit={handleSubmit}
+                onCancel={handleCloseForm}
+                isSubmitting={isSubmitting}
+              />
+            </DialogContent>
+          </Dialog>
+
+          {/* Delete Confirmation */}
+          <AlertDialog open={!!deletingId} onOpenChange={() => setDeletingId(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  {isRTL ? 'هل أنت متأكد؟' : 'Are you sure?'}
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {isRTL 
+                    ? 'سيتم حذف هذه الخدمة نهائياً. لا يمكن التراجع عن هذا الإجراء.'
+                    : 'This service will be permanently deleted. This action cannot be undone.'}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={handleDelete} 
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {t.common.delete}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </PullToRefresh>
+    </DashboardLayout>
   );
 }

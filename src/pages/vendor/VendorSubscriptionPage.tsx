@@ -2,7 +2,7 @@ import { Check, Star, Zap, Crown, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MainLayout } from '@/components/layout';
+import { DashboardLayout } from '@/components/layout';
 import { useLanguage } from '@/lib/i18n';
 import { useVendor } from '@/hooks/useVendor';
 import { format, addMonths, isAfter } from 'date-fns';
@@ -122,8 +122,8 @@ export default function VendorSubscriptionPage() {
   };
 
   return (
-    <MainLayout>
-      <div className="container py-8 px-4">
+    <DashboardLayout>
+      <div className="p-4 md:p-6 max-w-5xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className={`text-3xl md:text-4xl font-bold mb-3 ${isRTL ? 'font-arabic' : ''}`}>
@@ -240,6 +240,6 @@ export default function VendorSubscriptionPage() {
           </Button>
         </div>
       </div>
-    </MainLayout>
+    </DashboardLayout>
   );
 }
