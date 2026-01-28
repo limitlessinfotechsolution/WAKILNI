@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Plus, User, Check } from 'lucide-react';
+import { Plus, User, Check, Heart, Sparkles, UserPlus } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
   DialogContent,
@@ -21,12 +22,12 @@ interface StepBeneficiarySelectionProps {
   onSelect: (beneficiary: Beneficiary) => void;
 }
 
-const statusColors: Record<BeneficiaryStatus, string> = {
-  deceased: 'bg-muted text-muted-foreground',
-  sick: 'bg-destructive/10 text-destructive',
-  elderly: 'bg-secondary/50 text-secondary-foreground',
-  disabled: 'bg-accent/50 text-accent-foreground',
-  other: 'bg-primary/10 text-primary',
+const statusConfig: Record<BeneficiaryStatus, { icon: string; bgColor: string; textColor: string }> = {
+  deceased: { icon: '🕊️', bgColor: 'bg-slate-100 dark:bg-slate-800', textColor: 'text-slate-700 dark:text-slate-300' },
+  sick: { icon: '🤲', bgColor: 'bg-rose-50 dark:bg-rose-900/20', textColor: 'text-rose-700 dark:text-rose-300' },
+  elderly: { icon: '👴', bgColor: 'bg-amber-50 dark:bg-amber-900/20', textColor: 'text-amber-700 dark:text-amber-300' },
+  disabled: { icon: '♿', bgColor: 'bg-blue-50 dark:bg-blue-900/20', textColor: 'text-blue-700 dark:text-blue-300' },
+  other: { icon: '🙏', bgColor: 'bg-purple-50 dark:bg-purple-900/20', textColor: 'text-purple-700 dark:text-purple-300' },
 };
 
 export function StepBeneficiarySelection({ selected, onSelect }: StepBeneficiarySelectionProps) {
@@ -62,21 +63,34 @@ export function StepBeneficiarySelection({ selected, onSelect }: StepBeneficiary
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        {[1, 2].map((i) => (
-          <div key={i} className="h-24 bg-muted animate-pulse rounded-lg" />
-        ))}
+      <div className="space-y-6">
+        <div className="text-center space-y-2">
+          <Skeleton className="h-8 w-48 mx-auto" />
+          <Skeleton className="h-4 w-64 mx-auto" />
+        </div>
+        <div className="space-y-4">
+          {[1, 2].map((i) => (
+            <Skeleton key={i} className="h-24 w-full rounded-xl" />
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-2xl font-semibold mb-2">
+      {/* Header */}
+      <div className="text-center space-y-2">
+        <div className="inline-flex items-center gap-2 text-primary">
+          <Heart className="h-5 w-5" />
+          <span className="text-sm font-medium">
+            {isRTL ? 'الدعاء للميت ينفعه' : 'Supplication benefits the deceased'}
+          </span>
+        </div>
+        <h2 className="text-2xl font-semibold">
           {isRTL ? 'اختر المستفيد' : 'Select Beneficiary'}
         </h2>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground max-w-md mx-auto">
           {isRTL 
             ? 'اختر الشخص الذي ستُؤدى المناسك نيابةً عنه'
             : 'Choose the person on whose behalf the pilgrimage will be performed'}
@@ -84,7 +98,10 @@ export function StepBeneficiarySelection({ selected, onSelect }: StepBeneficiary
       </div>
 
       <div className="space-y-4">
+        {/* Existing Beneficiaries */}
         {beneficiaries.map((beneficiary) => {
+          const status = beneficiary.status as BeneficiaryStatus;
+          const config = statusConfig[status] || statusConfig.other;
           const displayName = isRTL && beneficiary.full_name_ar 
             ? beneficiary.full_name_ar 
             : beneficiary.full_name;
@@ -93,7 +110,7 @@ export function StepBeneficiarySelection({ selected, onSelect }: StepBeneficiary
             <Card
               key={beneficiary.id}
               className={cn(
-                'cursor-pointer transition-all hover:shadow-md',
+                'cursor-pointer transition-all duration-300 hover:shadow-lg overflow-hidden group',
                 selected?.id === beneficiary.id
                   ? 'border-primary ring-2 ring-primary ring-offset-2'
                   : 'hover:border-primary/50'
@@ -102,21 +119,32 @@ export function StepBeneficiarySelection({ selected, onSelect }: StepBeneficiary
             >
               <CardContent className="p-6">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-full bg-primary/10 text-primary">
-                    <User className="h-5 w-5" />
+                  {/* Avatar with status icon */}
+                  <div className={cn(
+                    'relative p-3 rounded-full transition-colors',
+                    selected?.id === beneficiary.id
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-primary/10 text-primary'
+                  )}>
+                    <User className="h-6 w-6" />
+                    <span className="absolute -bottom-1 -end-1 text-lg">
+                      {config.icon}
+                    </span>
                   </div>
-                  <div className="flex-1">
+                  
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className="font-semibold">{displayName}</h3>
+                      <h3 className="font-semibold truncate">{displayName}</h3>
                       {selected?.id === beneficiary.id && (
-                        <div className="bg-primary text-primary-foreground rounded-full p-1">
+                        <div className="bg-primary text-primary-foreground rounded-full p-1 shrink-0">
                           <Check className="h-3 w-3" />
                         </div>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge className={statusColors[beneficiary.status as BeneficiaryStatus]}>
-                        {statusLabels[beneficiary.status as BeneficiaryStatus]}
+                    <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                      <Badge className={cn(config.bgColor, config.textColor, 'border-0')}>
+                        {config.icon} {statusLabels[status]}
                       </Badge>
                       {beneficiary.nationality && (
                         <span className="text-sm text-muted-foreground">
@@ -131,18 +159,20 @@ export function StepBeneficiarySelection({ selected, onSelect }: StepBeneficiary
           );
         })}
 
-        {/* Add New Beneficiary */}
+        {/* Add New Beneficiary Card */}
         <Card
-          className="cursor-pointer transition-all hover:shadow-md hover:border-primary/50 border-dashed"
+          className="cursor-pointer transition-all duration-300 hover:shadow-lg hover:border-primary/50 border-dashed group"
           onClick={() => setIsFormOpen(true)}
         >
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-muted text-muted-foreground">
-                <Plus className="h-5 w-5" />
+              <div className="p-3 rounded-full bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                <UserPlus className="h-6 w-6" />
               </div>
               <div>
-                <h3 className="font-semibold">{t.beneficiaries.addNew}</h3>
+                <h3 className="font-semibold group-hover:text-primary transition-colors">
+                  {t.beneficiaries.addNew}
+                </h3>
                 <p className="text-sm text-muted-foreground">
                   {isRTL 
                     ? 'أضف مستفيد جديد للقائمة'
@@ -152,13 +182,44 @@ export function StepBeneficiarySelection({ selected, onSelect }: StepBeneficiary
             </div>
           </CardContent>
         </Card>
+
+        {/* Empty State */}
+        {beneficiaries.length === 0 && (
+          <div className="text-center py-8 space-y-3">
+            <div className="text-5xl">🤲</div>
+            <p className="text-muted-foreground">
+              {isRTL 
+                ? 'لم تقم بإضافة أي مستفيدين بعد'
+                : 'You haven\'t added any beneficiaries yet'}
+            </p>
+            <Button onClick={() => setIsFormOpen(true)} variant="outline">
+              <Plus className="h-4 w-4 me-2" />
+              {t.beneficiaries.addNew}
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Islamic reminder */}
+      <div className="text-center pt-4">
+        <p className={cn(
+          'text-sm text-muted-foreground',
+          isRTL && 'font-arabic'
+        )}>
+          {isRTL 
+            ? '"إِذَا مَاتَ ابْنُ آدَمَ انْقَطَعَ عَمَلُهُ إِلَّا مِنْ ثَلَاثٍ: صَدَقَةٍ جَارِيَةٍ، أَوْ عِلْمٍ يُنْتَفَعُ بِهِ، أَوْ وَلَدٍ صَالِحٍ يَدْعُو لَهُ"'
+            : '"When a person dies, their deeds are cut off except for three: ongoing charity, beneficial knowledge, or a righteous child who prays for them"'}
+        </p>
       </div>
 
       {/* Add Beneficiary Dialog */}
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>{t.beneficiaries.addNew}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              {t.beneficiaries.addNew}
+            </DialogTitle>
             <DialogDescription>
               {isRTL 
                 ? 'أدخل معلومات المستفيد الجديد'

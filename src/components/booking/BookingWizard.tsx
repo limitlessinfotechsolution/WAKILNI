@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Check, ChevronRight, ChevronLeft, Loader2 } from 'lucide-react';
+import { Check, ChevronRight, ChevronLeft, Loader2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/i18n';
 import { StepServiceSelection } from './steps/StepServiceSelection';
 import { StepProviderSelection } from './steps/StepProviderSelection';
+import { StepDateSelection } from './steps/StepDateSelection';
 import { StepBeneficiarySelection } from './steps/StepBeneficiarySelection';
 import { StepReviewConfirm } from './steps/StepReviewConfirm';
 import { StepPayment } from './steps/StepPayment';
@@ -24,11 +25,12 @@ interface BookingWizardProps {
 }
 
 const steps = [
-  { id: 'service', labelEn: 'Service Type', labelAr: 'نوع الخدمة' },
-  { id: 'provider', labelEn: 'Select Provider', labelAr: 'اختر مقدم الخدمة' },
-  { id: 'beneficiary', labelEn: 'Beneficiary', labelAr: 'المستفيد' },
-  { id: 'review', labelEn: 'Review', labelAr: 'المراجعة' },
-  { id: 'payment', labelEn: 'Payment', labelAr: 'الدفع' },
+  { id: 'service', labelEn: 'Service', labelAr: 'الخدمة', icon: '🕋' },
+  { id: 'provider', labelEn: 'Provider', labelAr: 'المقدم', icon: '✓' },
+  { id: 'date', labelEn: 'Date', labelAr: 'التاريخ', icon: '📅' },
+  { id: 'beneficiary', labelEn: 'Beneficiary', labelAr: 'المستفيد', icon: '👤' },
+  { id: 'review', labelEn: 'Review', labelAr: 'المراجعة', icon: '📋' },
+  { id: 'payment', labelEn: 'Payment', labelAr: 'الدفع', icon: '💳' },
 ];
 
 export function BookingWizard({ onComplete }: BookingWizardProps) {
@@ -53,10 +55,12 @@ export function BookingWizard({ onComplete }: BookingWizardProps) {
       case 1:
         return !!bookingData.service;
       case 2:
-        return !!bookingData.beneficiary;
+        return !!bookingData.scheduledDate;
       case 3:
-        return true;
+        return !!bookingData.beneficiary;
       case 4:
+        return true;
+      case 5:
         return true;
       default:
         return false;
@@ -94,7 +98,7 @@ export function BookingWizard({ onComplete }: BookingWizardProps) {
         return (
           <StepServiceSelection
             selected={bookingData.serviceType}
-            onSelect={(type) => updateBookingData({ serviceType: type, service: null })}
+            onSelect={(type) => updateBookingData({ serviceType: type, service: null, scheduledDate: null })}
           />
         );
       case 1:
@@ -102,24 +106,32 @@ export function BookingWizard({ onComplete }: BookingWizardProps) {
           <StepProviderSelection
             serviceType={bookingData.serviceType!}
             selected={bookingData.service}
-            onSelect={(service) => updateBookingData({ service })}
+            onSelect={(service) => updateBookingData({ service, scheduledDate: null })}
           />
         );
       case 2:
+        return (
+          <StepDateSelection
+            service={bookingData.service!}
+            selectedDate={bookingData.scheduledDate}
+            onSelectDate={(date) => updateBookingData({ scheduledDate: date })}
+          />
+        );
+      case 3:
         return (
           <StepBeneficiarySelection
             selected={bookingData.beneficiary}
             onSelect={(beneficiary) => updateBookingData({ beneficiary })}
           />
         );
-      case 3:
+      case 4:
         return (
           <StepReviewConfirm
             data={bookingData}
             onUpdate={updateBookingData}
           />
         );
-      case 4:
+      case 5:
         return (
           <StepPayment
             data={bookingData}
@@ -134,52 +146,73 @@ export function BookingWizard({ onComplete }: BookingWizardProps) {
 
   return (
     <div className="space-y-8">
+      {/* Header Quote */}
+      <div className="text-center">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm">
+          <Sparkles className="h-4 w-4" />
+          <span className={cn(isRTL && 'font-arabic')}>
+            {isRTL 
+              ? 'وَمَن تَطَوَّعَ خَيْرًا فَإِنَّ اللَّهَ شَاكِرٌ عَلِيمٌ'
+              : 'Whoever volunteers good, Allah is appreciative and knowing'}
+          </span>
+        </div>
+      </div>
+
       {/* Progress Steps */}
       <nav aria-label="Progress" className="overflow-x-auto pb-4">
-        <ol className="flex items-center justify-center min-w-max">
+        <ol className="flex items-center justify-center min-w-max gap-2">
           {steps.map((step, index) => (
-            <li key={step.id} className={cn('relative', index !== steps.length - 1 && 'pe-8 sm:pe-20')}>
-              <div className="flex items-center">
+            <li key={step.id} className="relative flex items-center">
+              {/* Step Circle */}
+              <button
+                onClick={() => index < currentStep && setCurrentStep(index)}
+                disabled={index > currentStep}
+                className={cn(
+                  'relative flex flex-col items-center',
+                  index < currentStep && 'cursor-pointer',
+                  index > currentStep && 'cursor-not-allowed opacity-50'
+                )}
+              >
                 <div
                   className={cn(
-                    'relative flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors',
+                    'flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300',
                     index < currentStep
-                      ? 'border-primary bg-primary text-primary-foreground'
+                      ? 'border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/30'
                       : index === currentStep
-                      ? 'border-primary bg-background text-primary'
+                      ? 'border-primary bg-background text-primary shadow-md'
                       : 'border-muted bg-muted text-muted-foreground'
                   )}
                 >
                   {index < currentStep ? (
                     <Check className="h-5 w-5" />
                   ) : (
-                    <span className="text-sm font-medium">{index + 1}</span>
+                    <span className="text-sm">{step.icon}</span>
                   )}
                 </div>
-                {index !== steps.length - 1 && (
-                  <div
-                    className={cn(
-                      'absolute top-5 h-0.5 w-8 sm:w-20',
-                      isRTL ? 'left-0 -translate-x-full' : 'right-0 translate-x-0',
-                      index < currentStep ? 'bg-primary' : 'bg-muted'
-                    )}
-                    style={{ [isRTL ? 'left' : 'right']: '0', transform: isRTL ? 'translateX(-100%)' : 'none' }}
-                  />
-                )}
-              </div>
-              <p className={cn(
-                'mt-2 text-xs font-medium text-center max-w-[80px]',
-                index <= currentStep ? 'text-primary' : 'text-muted-foreground'
-              )}>
-                {isRTL ? step.labelAr : step.labelEn}
-              </p>
+                <span className={cn(
+                  'mt-2 text-xs font-medium text-center max-w-[60px] leading-tight',
+                  index <= currentStep ? 'text-primary' : 'text-muted-foreground'
+                )}>
+                  {isRTL ? step.labelAr : step.labelEn}
+                </span>
+              </button>
+              
+              {/* Connector Line */}
+              {index !== steps.length - 1 && (
+                <div
+                  className={cn(
+                    'w-8 sm:w-12 h-0.5 mx-1 transition-colors duration-300',
+                    index < currentStep ? 'bg-primary' : 'bg-muted'
+                  )}
+                />
+              )}
             </li>
           ))}
         </ol>
       </nav>
 
       {/* Step Content */}
-      <div className="min-h-[400px]">
+      <div className="min-h-[450px]">
         {renderStepContent()}
       </div>
 

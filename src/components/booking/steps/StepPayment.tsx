@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { CreditCard, Lock, CheckCircle, Loader2 } from 'lucide-react';
+import { CreditCard, Lock, CheckCircle, Loader2, Shield, Sparkles, BadgeCheck, Clock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/i18n';
 import type { BookingData } from '../BookingWizard';
 
@@ -51,11 +52,20 @@ export function StepPayment({ data, onComplete, isSubmitting }: StepPaymentProps
   const serviceFee = price * 0.05;
   const total = price + serviceFee;
 
+  const isFormValid = cardNumber.length >= 16 && expiryDate.length === 5 && cvv.length === 3 && name.length > 0;
+
   return (
     <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-2xl font-semibold mb-2">
-          {isRTL ? 'الدفع' : 'Payment'}
+      {/* Header */}
+      <div className="text-center space-y-2">
+        <div className="inline-flex items-center gap-2 text-primary">
+          <Shield className="h-5 w-5" />
+          <span className="text-sm font-medium">
+            {isRTL ? 'دفع آمن ومشفر' : 'Secure & Encrypted Payment'}
+          </span>
+        </div>
+        <h2 className="text-2xl font-semibold">
+          {isRTL ? 'إتمام الدفع' : 'Complete Payment'}
         </h2>
         <p className="text-muted-foreground">
           {isRTL 
@@ -66,10 +76,13 @@ export function StepPayment({ data, onComplete, isSubmitting }: StepPaymentProps
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Payment Form */}
-        <Card>
+        <Card className="overflow-hidden">
+          <div className="h-1 bg-gradient-to-r from-primary to-secondary" />
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <CreditCard className="h-4 w-4" />
+              <div className="p-1.5 rounded-full bg-primary/10 text-primary">
+                <CreditCard className="h-4 w-4" />
+              </div>
               {isRTL ? 'بيانات البطاقة' : 'Card Details'}
             </CardTitle>
           </CardHeader>
@@ -83,6 +96,7 @@ export function StepPayment({ data, onComplete, isSubmitting }: StepPaymentProps
                 placeholder={isRTL ? 'الاسم الكامل' : 'Full Name'}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                className="h-11"
               />
             </div>
 
@@ -96,6 +110,7 @@ export function StepPayment({ data, onComplete, isSubmitting }: StepPaymentProps
                 value={cardNumber}
                 onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
                 maxLength={19}
+                className="h-11 font-mono"
               />
             </div>
 
@@ -110,6 +125,7 @@ export function StepPayment({ data, onComplete, isSubmitting }: StepPaymentProps
                   value={expiryDate}
                   onChange={(e) => setExpiryDate(formatExpiry(e.target.value))}
                   maxLength={5}
+                  className="h-11 font-mono"
                 />
               </div>
               <div className="space-y-2">
@@ -121,29 +137,32 @@ export function StepPayment({ data, onComplete, isSubmitting }: StepPaymentProps
                   onChange={(e) => setCvv(e.target.value.replace(/\D/g, '').slice(0, 3))}
                   maxLength={3}
                   type="password"
+                  className="h-11 font-mono"
                 />
               </div>
             </div>
 
-            <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2">
-              <Lock className="h-4 w-4" />
+            <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2 bg-muted/30 p-3 rounded-lg">
+              <Lock className="h-4 w-4 text-primary" />
               <span>
                 {isRTL 
-                  ? 'معاملتك مؤمنة ومشفرة'
-                  : 'Your transaction is secure and encrypted'}
+                  ? 'معاملتك مؤمنة ومشفرة بأعلى معايير الأمان'
+                  : 'Your transaction is secure and encrypted with industry-standard security'}
               </span>
             </div>
           </CardContent>
         </Card>
 
         {/* Order Summary */}
-        <Card>
+        <Card className="overflow-hidden">
+          <div className="h-1 bg-gradient-to-r from-secondary to-secondary/50" />
           <CardHeader>
             <CardTitle className="text-base">
               {isRTL ? 'ملخص الطلب' : 'Order Summary'}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Service Details */}
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">
@@ -165,55 +184,71 @@ export function StepPayment({ data, onComplete, isSubmitting }: StepPaymentProps
 
             <Separator />
 
-            <div className="flex justify-between text-lg font-semibold">
+            <div className="flex justify-between text-lg font-bold">
               <span>{isRTL ? 'الإجمالي' : 'Total'}</span>
               <span className="text-primary">
                 {formatPrice(total, data.service?.currency || null)}
               </span>
             </div>
 
-            <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-              <div className="flex items-start gap-2">
-                <CheckCircle className="h-4 w-4 text-primary mt-0.5" />
-                <span className="text-sm">
-                  {isRTL 
-                    ? 'ضمان استرداد الأموال خلال 7 أيام'
-                    : '7-day money-back guarantee'}
-                </span>
+            {/* Guarantees */}
+            <div className="bg-muted/30 rounded-lg p-4 space-y-3">
+              <div className="flex items-start gap-3">
+                <CheckCircle className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                <div>
+                  <span className="font-medium text-sm">
+                    {isRTL ? 'ضمان استرداد الأموال' : 'Money-back Guarantee'}
+                  </span>
+                  <p className="text-xs text-muted-foreground">
+                    {isRTL 
+                      ? 'استرداد كامل خلال 7 أيام'
+                      : 'Full refund within 7 days'}
+                  </p>
+                </div>
               </div>
-              <div className="flex items-start gap-2">
-                <CheckCircle className="h-4 w-4 text-primary mt-0.5" />
-                <span className="text-sm">
-                  {isRTL 
-                    ? 'إثبات الأداء بالصور والفيديو'
-                    : 'Photo & video proof of performance'}
-                </span>
+              <div className="flex items-start gap-3">
+                <BadgeCheck className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                <div>
+                  <span className="font-medium text-sm">
+                    {isRTL ? 'إثبات الأداء' : 'Proof of Performance'}
+                  </span>
+                  <p className="text-xs text-muted-foreground">
+                    {isRTL 
+                      ? 'صور وفيديو للمناسك'
+                      : 'Photo & video proof'}
+                  </p>
+                </div>
               </div>
-              <div className="flex items-start gap-2">
-                <CheckCircle className="h-4 w-4 text-primary mt-0.5" />
-                <span className="text-sm">
-                  {isRTL 
-                    ? 'دعم على مدار الساعة'
-                    : '24/7 customer support'}
-                </span>
+              <div className="flex items-start gap-3">
+                <Clock className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                <div>
+                  <span className="font-medium text-sm">
+                    {isRTL ? 'دعم متواصل' : '24/7 Support'}
+                  </span>
+                  <p className="text-xs text-muted-foreground">
+                    {isRTL 
+                      ? 'فريق دعم على مدار الساعة'
+                      : 'Round-the-clock assistance'}
+                  </p>
+                </div>
               </div>
             </div>
 
             <Button 
-              className="w-full" 
+              className="w-full h-12 text-base" 
               size="lg"
               onClick={onComplete}
-              disabled={isSubmitting}
+              disabled={isSubmitting || !isFormValid}
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="me-2 h-5 w-5 animate-spin" />
                   {isRTL ? 'جاري المعالجة...' : 'Processing...'}
                 </>
               ) : (
                 <>
-                  <Lock className="me-2 h-4 w-4" />
-                  {isRTL ? 'إتمام الدفع' : 'Complete Payment'}
+                  <Lock className="me-2 h-5 w-5" />
+                  {isRTL ? `إتمام الدفع ${formatPrice(total, data.service?.currency || null)}` : `Pay ${formatPrice(total, data.service?.currency || null)}`}
                 </>
               )}
             </Button>
@@ -225,6 +260,24 @@ export function StepPayment({ data, onComplete, isSubmitting }: StepPaymentProps
             </p>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Trust Banner */}
+      <div className="flex flex-wrap justify-center items-center gap-6 pt-4 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2">
+          <Lock className="h-4 w-4" />
+          <span>{isRTL ? 'دفع مشفر' : 'Encrypted'}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Shield className="h-4 w-4" />
+          <span>PCI DSS</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-primary" />
+          <span className={cn(isRTL && 'font-arabic')}>
+            {isRTL ? 'بارك الله في صدقاتكم' : 'May Allah bless your charity'}
+          </span>
+        </div>
       </div>
     </div>
   );

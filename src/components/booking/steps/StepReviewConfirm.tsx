@@ -1,15 +1,10 @@
-import { CalendarIcon, User, Briefcase, FileText } from 'lucide-react';
+import { CalendarIcon, User, Briefcase, FileText, Sparkles, Clock, MapPin, CheckCircle2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { ar } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/i18n';
 import type { BookingData } from '../BookingWizard';
@@ -29,16 +24,35 @@ export function StepReviewConfirm({ data, onUpdate }: StepReviewConfirmProps) {
     }).format(price);
   };
 
-  const serviceTypeLabels = {
-    umrah: isRTL ? 'عمرة' : 'Umrah',
-    hajj: isRTL ? 'حج' : 'Hajj',
-    ziyarat: isRTL ? 'زيارة' : 'Ziyarat',
+  const serviceTypeConfig = {
+    umrah: { label: isRTL ? 'عمرة' : 'Umrah', icon: '🕋' },
+    hajj: { label: isRTL ? 'حج' : 'Hajj', icon: '🕌' },
+    ziyarat: { label: isRTL ? 'زيارة' : 'Ziyarat', icon: '🌙' },
   };
+
+  const statusLabels: Record<string, string> = {
+    deceased: isRTL ? 'متوفى' : 'Deceased',
+    sick: isRTL ? 'مريض' : 'Sick',
+    elderly: isRTL ? 'كبير في السن' : 'Elderly',
+    disabled: isRTL ? 'ذو إعاقة' : 'Disabled',
+    other: isRTL ? 'أخرى' : 'Other',
+  };
+
+  const price = data.service?.price || 0;
+  const serviceFee = price * 0.05;
+  const total = price + serviceFee;
 
   return (
     <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-2xl font-semibold mb-2">
+      {/* Header */}
+      <div className="text-center space-y-2">
+        <div className="inline-flex items-center gap-2 text-primary">
+          <Sparkles className="h-5 w-5" />
+          <span className="text-sm font-medium">
+            {isRTL ? 'توكلنا على الله' : 'We place our trust in Allah'}
+          </span>
+        </div>
+        <h2 className="text-2xl font-semibold">
           {isRTL ? 'مراجعة الحجز' : 'Review Your Booking'}
         </h2>
         <p className="text-muted-foreground">
@@ -48,50 +62,50 @@ export function StepReviewConfirm({ data, onUpdate }: StepReviewConfirmProps) {
         </p>
       </div>
 
+      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Service Details */}
-        <Card>
+        <Card className="overflow-hidden">
+          <div className="h-1 bg-gradient-to-r from-primary to-primary/50" />
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
-              <Briefcase className="h-4 w-4" />
+              <div className="p-1.5 rounded-full bg-primary/10 text-primary">
+                <Briefcase className="h-4 w-4" />
+              </div>
               {isRTL ? 'تفاصيل الخدمة' : 'Service Details'}
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div>
-              <p className="text-sm text-muted-foreground">
+          <CardContent className="space-y-4">
+            {/* Service Type */}
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">
                 {isRTL ? 'نوع الخدمة' : 'Service Type'}
-              </p>
-              <Badge variant="secondary">
-                {data.serviceType && serviceTypeLabels[data.serviceType]}
+              </span>
+              <Badge variant="secondary" className="gap-1">
+                {data.serviceType && serviceTypeConfig[data.serviceType].icon}
+                {data.serviceType && serviceTypeConfig[data.serviceType].label}
               </Badge>
             </div>
+            
             {data.service && (
               <>
+                {/* Service Name */}
                 <div>
-                  <p className="text-sm text-muted-foreground">
+                  <span className="text-sm text-muted-foreground block mb-1">
                     {isRTL ? 'الخدمة' : 'Service'}
-                  </p>
+                  </span>
                   <p className="font-medium">
                     {isRTL ? data.service.title_ar || data.service.title : data.service.title}
                   </p>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">
-                    {t.services.price}
-                  </p>
-                  <p className="font-semibold text-primary">
-                    {formatPrice(data.service.price, data.service.currency)}
-                  </p>
-                </div>
+                
+                {/* Duration */}
                 {data.service.duration_days && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">
-                      {t.services.duration}
-                    </p>
-                    <p className="font-medium">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">
                       {data.service.duration_days} {isRTL ? 'أيام' : 'days'}
-                    </p>
+                    </span>
                   </div>
                 )}
               </>
@@ -100,40 +114,45 @@ export function StepReviewConfirm({ data, onUpdate }: StepReviewConfirmProps) {
         </Card>
 
         {/* Beneficiary Details */}
-        <Card>
+        <Card className="overflow-hidden">
+          <div className="h-1 bg-gradient-to-r from-secondary to-secondary/50" />
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
-              <User className="h-4 w-4" />
+              <div className="p-1.5 rounded-full bg-secondary/10 text-secondary-foreground">
+                <User className="h-4 w-4" />
+              </div>
               {isRTL ? 'المستفيد' : 'Beneficiary'}
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-4">
             {data.beneficiary && (
               <>
                 <div>
-                  <p className="text-sm text-muted-foreground">
+                  <span className="text-sm text-muted-foreground block mb-1">
                     {t.beneficiaries.fullName}
-                  </p>
+                  </span>
                   <p className="font-medium">
                     {isRTL && data.beneficiary.full_name_ar 
                       ? data.beneficiary.full_name_ar 
                       : data.beneficiary.full_name}
                   </p>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">
                     {t.beneficiaries.status}
-                  </p>
+                  </span>
                   <Badge variant="outline">
-                    {t.beneficiaries[data.beneficiary.status as keyof typeof t.beneficiaries]}
+                    {statusLabels[data.beneficiary.status]}
                   </Badge>
                 </div>
+                
                 {data.beneficiary.nationality && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">
                       {t.beneficiaries.nationality}
-                    </p>
-                    <p className="font-medium">{data.beneficiary.nationality}</p>
+                    </span>
+                    <span className="font-medium">{data.beneficiary.nationality}</span>
                   </div>
                 )}
               </>
@@ -143,63 +162,94 @@ export function StepReviewConfirm({ data, onUpdate }: StepReviewConfirmProps) {
       </div>
 
       {/* Scheduled Date */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <CalendarIcon className="h-4 w-4" />
-            {t.bookings.scheduledDate}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  'w-full md:w-auto justify-start text-start font-normal',
-                  !data.scheduledDate && 'text-muted-foreground'
-                )}
-              >
-                <CalendarIcon className="me-2 h-4 w-4" />
-                {data.scheduledDate ? (
-                  format(data.scheduledDate, 'PPP')
-                ) : (
-                  <span>{isRTL ? 'اختر التاريخ (اختياري)' : 'Pick a date (optional)'}</span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={data.scheduledDate || undefined}
-                onSelect={(date) => onUpdate({ scheduledDate: date || null })}
-                disabled={(date) => date < new Date()}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-        </CardContent>
-      </Card>
+      {data.scheduledDate && (
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-full bg-primary/10 text-primary">
+                <CalendarIcon className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-muted-foreground">
+                  {t.bookings.scheduledDate}
+                </p>
+                <p className="font-semibold">
+                  {format(data.scheduledDate, 'EEEE, d MMMM yyyy', { locale: isRTL ? ar : undefined })}
+                </p>
+              </div>
+              <CheckCircle2 className="h-5 w-5 text-primary" />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Special Requests */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <FileText className="h-4 w-4" />
+            <div className="p-1.5 rounded-full bg-muted">
+              <FileText className="h-4 w-4" />
+            </div>
             {t.bookings.specialRequests}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <Textarea
             placeholder={isRTL 
-              ? 'أضف أي طلبات خاصة مثل كرسي متحرك، مساعدة طبية، إلخ...'
-              : 'Add any special requests such as wheelchair, medical assistance, etc...'}
+              ? 'أضف أي طلبات خاصة مثل الدعاء بأسماء معينة، كرسي متحرك، مساعدة طبية، إلخ...'
+              : 'Add any special requests such as specific prayers, wheelchair, medical assistance, etc...'}
             value={data.specialRequests}
             onChange={(e) => onUpdate({ specialRequests: e.target.value })}
             rows={3}
+            className="resize-none"
           />
         </CardContent>
       </Card>
+
+      {/* Price Summary */}
+      <Card className="bg-muted/30">
+        <CardContent className="p-6 space-y-4">
+          <h3 className="font-semibold">
+            {isRTL ? 'ملخص التكلفة' : 'Cost Summary'}
+          </h3>
+          
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">
+                {isRTL ? data.service?.title_ar || data.service?.title : data.service?.title}
+              </span>
+              <span>{formatPrice(price, data.service?.currency || null)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">
+                {isRTL ? 'رسوم الخدمة (5%)' : 'Service Fee (5%)'}
+              </span>
+              <span>{formatPrice(serviceFee, data.service?.currency || null)}</span>
+            </div>
+          </div>
+          
+          <Separator />
+          
+          <div className="flex justify-between text-lg font-bold">
+            <span>{isRTL ? 'الإجمالي' : 'Total'}</span>
+            <span className="text-primary">
+              {formatPrice(total, data.service?.currency || null)}
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Islamic Assurance */}
+      <div className="text-center p-4 rounded-lg bg-primary/5 border border-primary/20">
+        <p className={cn(
+          'text-sm text-muted-foreground',
+          isRTL && 'font-arabic'
+        )}>
+          {isRTL 
+            ? '✨ "مَنْ دَعَا لِأَخِيهِ بِظَهْرِ الْغَيْبِ قَالَ الْمَلَكُ الْمُوَكَّلُ بِهِ: آمِينَ وَلَكَ بِمِثْلٍ" ✨'
+            : '✨ "Whoever prays for his brother in his absence, the angel assigned says: Amen, and may you have the same" ✨'}
+        </p>
+      </div>
     </div>
   );
 }
