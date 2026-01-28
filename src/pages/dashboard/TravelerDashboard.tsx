@@ -15,14 +15,34 @@ import {
   HijriDateWidget 
 } from '@/components/dashboard/TravelerWidgets';
 import { cn } from '@/lib/utils';
+import { PullToRefresh } from '@/components/ui/pull-to-refresh';
+import { TravelerDashboardSkeleton } from '@/components/dashboard/DashboardSkeletons';
+import { useDashboardRefresh } from '@/hooks/useDashboardRefresh';
+import { useEffect } from 'react';
 
 export default function TravelerDashboard() {
   const { t, isRTL } = useLanguage();
   const { profile } = useAuth();
+  const { isLoading, refresh, finishLoading } = useDashboardRefresh();
+
+  useEffect(() => {
+    // Simulate initial data loading
+    const timer = setTimeout(finishLoading, 800);
+    return () => clearTimeout(timer);
+  }, [finishLoading]);
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <TravelerDashboardSkeleton />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
-      <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+      <PullToRefresh onRefresh={refresh} className="h-full">
+        <div className="p-4 md:p-6 space-y-4 md:space-y-6">
         {/* Welcome Header - Compact on mobile */}
         <div className="space-y-0.5">
           <h1 className={cn('text-xl md:text-2xl font-bold', isRTL && 'font-arabic')}>
@@ -161,7 +181,8 @@ export default function TravelerDashboard() {
             </div>
           </CardContent>
         </Card>
-      </div>
+        </div>
+      </PullToRefresh>
     </DashboardLayout>
   );
 }

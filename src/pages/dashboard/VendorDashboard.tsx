@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
 import { Calendar, FileText, CreditCard, Shield, ArrowRight, ArrowLeft, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,11 +15,15 @@ import {
   CompanyProfileWidget 
 } from '@/components/dashboard/VendorWidgets';
 import { cn } from '@/lib/utils';
+import { PullToRefresh } from '@/components/ui/pull-to-refresh';
+import { VendorDashboardSkeleton } from '@/components/dashboard/DashboardSkeletons';
+import { useDashboardRefresh } from '@/hooks/useDashboardRefresh';
 
 export default function VendorDashboard() {
   const { t, isRTL } = useLanguage();
   const { profile } = useAuth();
-  const { vendor, stats, isLoading } = useVendor();
+  const { vendor, stats, isLoading: vendorLoading } = useVendor();
+  const { isLoading, refresh, finishLoading } = useDashboardRefresh();
 
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
@@ -27,19 +32,24 @@ export default function VendorDashboard() {
     ? Math.max(0, Math.ceil((new Date(vendor.subscription_expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
     : 0;
 
-  if (isLoading) {
+  useEffect(() => {
+    if (!vendorLoading) {
+      finishLoading();
+    }
+  }, [vendorLoading, finishLoading]);
+
+  if (isLoading && vendorLoading) {
     return (
       <DashboardLayout>
-        <div className="p-4 md:p-6 flex items-center justify-center min-h-[50vh]">
-          <div className="animate-pulse text-muted-foreground">Loading...</div>
-        </div>
+        <VendorDashboardSkeleton />
       </DashboardLayout>
     );
   }
 
   return (
     <DashboardLayout>
-      <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+      <PullToRefresh onRefresh={refresh} className="h-full">
+        <div className="p-4 md:p-6 space-y-4 md:space-y-6">
         {/* Company Profile Header - Compact on mobile */}
         <CompanyProfileWidget 
           name={isRTL ? vendor?.company_name_ar || vendor?.company_name : vendor?.company_name}
@@ -195,7 +205,8 @@ export default function VendorDashboard() {
             </div>
           </CardContent>
         </Card>
-      </div>
+        </div>
+      </PullToRefresh>
     </DashboardLayout>
   );
 }

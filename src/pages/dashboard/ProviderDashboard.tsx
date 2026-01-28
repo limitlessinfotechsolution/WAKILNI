@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
 import { Calendar, FileText, Star, Shield, ArrowRight, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,14 +16,32 @@ import {
   ClientsWidget 
 } from '@/components/dashboard/ProviderWidgets';
 import { cn } from '@/lib/utils';
+import { PullToRefresh } from '@/components/ui/pull-to-refresh';
+import { ProviderDashboardSkeleton } from '@/components/dashboard/DashboardSkeletons';
+import { useDashboardRefresh } from '@/hooks/useDashboardRefresh';
 
 export default function ProviderDashboard() {
   const { t, isRTL } = useLanguage();
   const { profile } = useAuth();
   const { provider, isLoading: providerLoading } = useProvider();
   const { stats: reviewStats } = useProviderReviews(provider?.id);
+  const { isLoading, refresh, finishLoading } = useDashboardRefresh();
 
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
+
+  useEffect(() => {
+    if (!providerLoading) {
+      finishLoading();
+    }
+  }, [providerLoading, finishLoading]);
+
+  if (isLoading && providerLoading) {
+    return (
+      <DashboardLayout>
+        <ProviderDashboardSkeleton />
+      </DashboardLayout>
+    );
+  }
 
   const avgRating = reviewStats?.averageRating || 0;
 
@@ -41,7 +60,8 @@ export default function ProviderDashboard() {
 
   return (
     <DashboardLayout>
-      <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+      <PullToRefresh onRefresh={refresh} className="h-full">
+        <div className="p-4 md:p-6 space-y-4 md:space-y-6">
         {/* Welcome Header - Compact on mobile */}
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
@@ -199,7 +219,8 @@ export default function ProviderDashboard() {
             </Card>
           </Link>
         </div>
-      </div>
+        </div>
+      </PullToRefresh>
     </DashboardLayout>
   );
 }

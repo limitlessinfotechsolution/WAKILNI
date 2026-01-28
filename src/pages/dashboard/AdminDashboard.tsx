@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
 import { 
   Users, Calendar, Heart, Shield, Settings, FileText, TrendingUp, Building2, 
   Crown, CreditCard, BarChart3, Clock, Sparkles
@@ -12,11 +13,29 @@ import { useAuth } from '@/lib/auth';
 import { StatCard, ActionCard, WidgetCard } from '@/components/ui/mobile-card';
 import { CreateUserDialog } from '@/components/admin/CreateUserDialog';
 import { cn } from '@/lib/utils';
+import { PullToRefresh } from '@/components/ui/pull-to-refresh';
+import { AdminDashboardSkeleton } from '@/components/dashboard/DashboardSkeletons';
+import { useDashboardRefresh } from '@/hooks/useDashboardRefresh';
 
 export default function AdminDashboard() {
   const { isRTL } = useLanguage();
-  const { stats } = useAdminStats();
+  const { stats, isLoading: statsLoading } = useAdminStats();
   const { isSuperAdmin, profile } = useAuth();
+  const { isLoading, refresh, finishLoading } = useDashboardRefresh();
+
+  useEffect(() => {
+    if (!statsLoading) {
+      finishLoading();
+    }
+  }, [statsLoading, finishLoading]);
+
+  if (isLoading && statsLoading) {
+    return (
+      <DashboardLayout>
+        <AdminDashboardSkeleton />
+      </DashboardLayout>
+    );
+  }
 
   const adminLinks = [
     {
@@ -107,7 +126,8 @@ export default function AdminDashboard() {
 
   return (
     <DashboardLayout>
-      <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+      <PullToRefresh onRefresh={refresh} className="h-full">
+        <div className="p-4 md:p-6 space-y-4 md:space-y-6">
         {/* Header - Compact on mobile */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -330,7 +350,8 @@ export default function AdminDashboard() {
             </div>
           </CardContent>
         </Card>
-      </div>
+        </div>
+      </PullToRefresh>
     </DashboardLayout>
   );
 }
