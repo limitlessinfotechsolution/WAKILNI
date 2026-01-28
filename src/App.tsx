@@ -45,6 +45,7 @@ import ServicesPage from "./pages/services/ServicesPage";
 import CalendarPage from "./pages/provider/CalendarPage";
 import AvailabilityPage from "./pages/provider/AvailabilityPage";
 import ProviderProfilePage from "./pages/providers/ProviderProfilePage";
+import InstallPage from "./pages/pwa/InstallPage";
 
 const queryClient = new QueryClient();
 
@@ -122,6 +123,8 @@ function AppRoutes() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
+      <Route path="/donate" element={<DonatePage />} />
+      <Route path="/install" element={<InstallPage />} />
       <Route path="/donate" element={<DonatePage />} />
       
       {/* Dashboard Router */}
