@@ -2,7 +2,7 @@ import { FileText, Plus, Star, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MainLayout } from '@/components/layout';
+import { DashboardLayout } from '@/components/layout';
 import { useLanguage } from '@/lib/i18n';
 import { useVendor } from '@/hooks/useVendor';
 import { Link } from 'react-router-dom';
@@ -22,17 +22,17 @@ export default function VendorServicesPage() {
 
   if (isLoading) {
     return (
-      <MainLayout>
-        <div className="container py-8 flex items-center justify-center">
+      <DashboardLayout>
+        <div className="p-4 md:p-6 flex items-center justify-center">
           <div className="animate-pulse text-muted-foreground">Loading...</div>
         </div>
-      </MainLayout>
+      </DashboardLayout>
     );
   }
 
   return (
-    <MainLayout>
-      <div className="container py-8 px-4">
+    <DashboardLayout>
+      <div className="p-4 md:p-6 space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
           <div>
@@ -138,6 +138,6 @@ export default function VendorServicesPage() {
           </CardContent>
         </Card>
       </div>
-    </MainLayout>
+    </DashboardLayout>
   );
 }

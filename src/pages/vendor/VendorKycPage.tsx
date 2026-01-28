@@ -1,15 +1,16 @@
-import { MainLayout } from '@/components/layout';
+import { DashboardLayout } from '@/components/layout';
 import { VendorKycForm } from '@/components/vendor/VendorKycForm';
 import { useLanguage } from '@/lib/i18n';
+import { cn } from '@/lib/utils';
 
 export default function VendorKycPage() {
   const { isRTL } = useLanguage();
 
   return (
-    <MainLayout>
-      <div className="container py-8 px-4 max-w-3xl">
-        <div className="mb-8">
-          <h1 className={`text-3xl font-bold mb-2 ${isRTL ? 'font-arabic' : ''}`}>
+    <DashboardLayout>
+      <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-6">
+        <div>
+          <h1 className={cn('text-2xl font-bold mb-1', isRTL && 'font-arabic')}>
             {isRTL ? 'التحقق من الوكالة' : 'Agency Verification'}
           </h1>
           <p className="text-muted-foreground">
@@ -21,6 +22,6 @@ export default function VendorKycPage() {
 
         <VendorKycForm />
       </div>
-    </MainLayout>
+    </DashboardLayout>
   );
 }
