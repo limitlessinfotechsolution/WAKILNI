@@ -1,9 +1,11 @@
-import { Building2, Users, TrendingUp, CreditCard, Calendar, Star, Package } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Building2, Users, TrendingUp, CreditCard, Star, Package } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/lib/i18n';
+import { WidgetCard } from '@/components/ui/mobile-card';
+import { cn } from '@/lib/utils';
 
 // Subscription Status Widget
 export function SubscriptionWidget({ 
@@ -24,40 +26,36 @@ export function SubscriptionWidget({
   };
 
   return (
-    <Card className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 border-purple-500/20">
-      <CardHeader className="pb-2">
-        <CardTitle className={`flex items-center gap-2 text-lg ${isRTL ? 'font-arabic' : ''}`}>
-          <CreditCard className="h-5 w-5 text-purple-500" />
-          {isRTL ? 'الاشتراك' : 'Subscription'}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Badge variant={isActive ? 'default' : 'destructive'}>
-              {isActive 
-                ? (isRTL ? 'نشط' : 'Active') 
-                : (isRTL ? 'منتهي' : 'Expired')}
-            </Badge>
-            <span className="font-semibold">
-              {isRTL ? planNames[plan]?.ar : planNames[plan]?.en}
-            </span>
-          </div>
-          <div>
-            <div className="flex justify-between text-sm mb-1">
-              <span className="text-muted-foreground">
-                {isRTL ? 'الأيام المتبقية' : 'Days Remaining'}
-              </span>
-              <span className="font-medium">{daysRemaining}</span>
-            </div>
-            <Progress value={(daysRemaining / 30) * 100} className="h-2" />
-          </div>
-          <Button variant="outline" size="sm" className="w-full">
-            {isRTL ? 'ترقية الخطة' : 'Upgrade Plan'}
-          </Button>
+    <WidgetCard 
+      title={isRTL ? 'الاشتراك' : 'Subscription'} 
+      icon={<CreditCard />}
+      color="purple"
+    >
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Badge variant={isActive ? 'default' : 'destructive'} className="text-[9px] h-5">
+            {isActive 
+              ? (isRTL ? 'نشط' : 'Active') 
+              : (isRTL ? 'منتهي' : 'Expired')}
+          </Badge>
+          <span className="font-semibold text-xs">
+            {isRTL ? planNames[plan]?.ar : planNames[plan]?.en}
+          </span>
         </div>
-      </CardContent>
-    </Card>
+        <div>
+          <div className="flex justify-between text-[10px] mb-1">
+            <span className="text-muted-foreground">
+              {isRTL ? 'المتبقي' : 'Remaining'}
+            </span>
+            <span className="font-medium">{daysRemaining} {isRTL ? 'يوم' : 'days'}</span>
+          </div>
+          <Progress value={(daysRemaining / 30) * 100} className="h-1.5" />
+        </div>
+        <Button variant="outline" size="sm" className="w-full h-7 text-[10px]">
+          {isRTL ? 'ترقية' : 'Upgrade'}
+        </Button>
+      </div>
+    </WidgetCard>
   );
 }
 
@@ -74,36 +72,32 @@ export function TeamWidget({
   const { isRTL } = useLanguage();
 
   return (
-    <Card className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20">
-      <CardHeader className="pb-2">
-        <CardTitle className={`flex items-center gap-2 text-lg ${isRTL ? 'font-arabic' : ''}`}>
-          <Users className="h-5 w-5 text-blue-500" />
-          {isRTL ? 'فريق العمل' : 'Team'}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-3 gap-2 text-center">
-          <div>
-            <p className="text-2xl font-bold">{totalProviders}</p>
-            <p className="text-xs text-muted-foreground">
-              {isRTL ? 'الإجمالي' : 'Total'}
-            </p>
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-green-500">{activeProviders}</p>
-            <p className="text-xs text-muted-foreground">
-              {isRTL ? 'نشط' : 'Active'}
-            </p>
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-yellow-500">{pendingVerification}</p>
-            <p className="text-xs text-muted-foreground">
-              {isRTL ? 'قيد التحقق' : 'Pending'}
-            </p>
-          </div>
+    <WidgetCard 
+      title={isRTL ? 'الفريق' : 'Team'} 
+      icon={<Users />}
+      color="blue"
+    >
+      <div className="grid grid-cols-3 gap-1 text-center">
+        <div>
+          <p className="text-base md:text-lg font-bold">{totalProviders}</p>
+          <p className="text-[9px] text-muted-foreground">
+            {isRTL ? 'الإجمالي' : 'Total'}
+          </p>
         </div>
-      </CardContent>
-    </Card>
+        <div>
+          <p className="text-base md:text-lg font-bold text-green-500">{activeProviders}</p>
+          <p className="text-[9px] text-muted-foreground">
+            {isRTL ? 'نشط' : 'Active'}
+          </p>
+        </div>
+        <div>
+          <p className="text-base md:text-lg font-bold text-yellow-500">{pendingVerification}</p>
+          <p className="text-[9px] text-muted-foreground">
+            {isRTL ? 'قيد التحقق' : 'Pending'}
+          </p>
+        </div>
+      </div>
+    </WidgetCard>
   );
 }
 
@@ -120,34 +114,30 @@ export function RevenueWidget({
   const { isRTL } = useLanguage();
 
   return (
-    <Card className="bg-gradient-to-br from-gold/10 to-gold/5 border-gold/20">
-      <CardHeader className="pb-2">
-        <CardTitle className={`flex items-center gap-2 text-lg ${isRTL ? 'font-arabic' : ''}`}>
-          <TrendingUp className="h-5 w-5 text-gold" />
-          {isRTL ? 'الإيرادات' : 'Revenue'}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          <div>
-            <p className="text-sm text-muted-foreground">
-              {isRTL ? 'هذا الشهر' : 'This Month'}
-            </p>
-            <p className="text-2xl font-bold text-gold">
-              {thisMonth.toLocaleString()} SAR
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge variant={growth >= 0 ? 'default' : 'destructive'}>
-              {growth >= 0 ? '+' : ''}{growth}%
-            </Badge>
-            <span className="text-sm text-muted-foreground">
-              {isRTL ? 'مقارنة بالشهر الماضي' : 'vs last month'}
-            </span>
-          </div>
+    <WidgetCard 
+      title={isRTL ? 'الإيرادات' : 'Revenue'} 
+      icon={<TrendingUp />}
+      color="yellow"
+    >
+      <div className="space-y-2">
+        <div>
+          <p className="text-[10px] text-muted-foreground">
+            {isRTL ? 'هذا الشهر' : 'This Month'}
+          </p>
+          <p className="text-lg md:text-xl font-bold text-yellow-600">
+            {thisMonth.toLocaleString()} <span className="text-[10px]">SAR</span>
+          </p>
         </div>
-      </CardContent>
-    </Card>
+        <div className="flex items-center gap-1.5">
+          <Badge variant={growth >= 0 ? 'default' : 'destructive'} className="text-[9px] h-4">
+            {growth >= 0 ? '+' : ''}{growth}%
+          </Badge>
+          <span className="text-[10px] text-muted-foreground">
+            {isRTL ? 'مقارنة بالماضي' : 'vs last'}
+          </span>
+        </div>
+      </div>
+    </WidgetCard>
   );
 }
 
@@ -164,39 +154,35 @@ export function ServicesStatsWidget({
   const { isRTL } = useLanguage();
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className={`flex items-center gap-2 text-lg ${isRTL ? 'font-arabic' : ''}`}>
-          <Package className="h-5 w-5 text-primary" />
-          {isRTL ? 'الخدمات' : 'Services'}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-3 gap-4 text-center">
-          <div>
-            <p className="text-2xl font-bold">{totalServices}</p>
-            <p className="text-xs text-muted-foreground">
-              {isRTL ? 'إجمالي' : 'Total'}
-            </p>
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-green-500">{activeServices}</p>
-            <p className="text-xs text-muted-foreground">
-              {isRTL ? 'نشطة' : 'Active'}
-            </p>
-          </div>
-          <div className="flex flex-col items-center">
-            <div className="flex items-center gap-1">
-              <Star className="h-4 w-4 text-gold fill-gold" />
-              <span className="text-lg font-bold">{avgRating.toFixed(1)}</span>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {isRTL ? 'التقييم' : 'Rating'}
-            </p>
-          </div>
+    <WidgetCard 
+      title={isRTL ? 'الخدمات' : 'Services'} 
+      icon={<Package />}
+      color="primary"
+    >
+      <div className="grid grid-cols-3 gap-1 text-center">
+        <div>
+          <p className="text-base md:text-lg font-bold">{totalServices}</p>
+          <p className="text-[9px] text-muted-foreground">
+            {isRTL ? 'إجمالي' : 'Total'}
+          </p>
         </div>
-      </CardContent>
-    </Card>
+        <div>
+          <p className="text-base md:text-lg font-bold text-green-500">{activeServices}</p>
+          <p className="text-[9px] text-muted-foreground">
+            {isRTL ? 'نشطة' : 'Active'}
+          </p>
+        </div>
+        <div className="flex flex-col items-center">
+          <div className="flex items-center gap-0.5">
+            <Star className="h-3 w-3 text-gold fill-gold" />
+            <span className="text-sm font-bold">{avgRating.toFixed(1)}</span>
+          </div>
+          <p className="text-[9px] text-muted-foreground">
+            {isRTL ? 'التقييم' : 'Rating'}
+          </p>
+        </div>
+      </div>
+    </WidgetCard>
   );
 }
 
@@ -214,21 +200,26 @@ export function CompanyProfileWidget({
 
   return (
     <Card className="bg-gradient-to-br from-primary/5 to-accent/5">
-      <CardContent className="pt-6">
-        <div className="flex items-center gap-4">
-          <div className="h-16 w-16 rounded-xl bg-primary/10 flex items-center justify-center">
+      <CardContent className="p-3 md:pt-6 md:p-6">
+        <div className="flex items-center gap-3 md:gap-4">
+          <div className="h-12 w-12 md:h-16 md:w-16 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
             {logoUrl ? (
               <img src={logoUrl} alt={name} className="h-full w-full object-cover rounded-xl" />
             ) : (
-              <Building2 className="h-8 w-8 text-primary" />
+              <Building2 className="h-6 w-6 md:h-8 md:w-8 text-primary" />
             )}
           </div>
-          <div>
-            <h3 className="font-semibold text-lg">{name || (isRTL ? 'شركتك' : 'Your Company')}</h3>
-            <Badge variant={isVerified ? 'default' : 'secondary'}>
+          <div className="min-w-0">
+            <h3 className={cn('font-semibold text-base md:text-lg truncate', isRTL && 'font-arabic')}>
+              {name || (isRTL ? 'شركتك' : 'Your Company')}
+            </h3>
+            <Badge 
+              variant={isVerified ? 'default' : 'secondary'} 
+              className="text-[10px] h-5 mt-0.5"
+            >
               {isVerified 
                 ? (isRTL ? 'موثقة' : 'Verified') 
-                : (isRTL ? 'قيد التحقق' : 'Pending Verification')}
+                : (isRTL ? 'قيد التحقق' : 'Pending')}
             </Badge>
           </div>
         </div>

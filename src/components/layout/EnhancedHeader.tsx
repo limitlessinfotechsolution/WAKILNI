@@ -182,17 +182,17 @@ export function EnhancedHeader({ showNav = true }: EnhancedHeaderProps) {
 
       {/* Main Header */}
       <div className="container">
-        <div className="flex h-16 items-center justify-between px-4 lg:px-0">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 group">
+        <div className="flex h-14 md:h-16 items-center justify-between px-3 md:px-4 lg:px-0">
+          {/* Logo - Compact on mobile */}
+          <Link to="/" className="flex items-center gap-2 md:gap-3 group">
             <div className="relative">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary via-primary to-emerald-600 text-primary-foreground shadow-lg shadow-primary/25 group-hover:shadow-xl group-hover:shadow-primary/30 transition-all duration-300">
-                <span className={`text-xl font-bold ${isRTL ? 'font-arabic' : ''}`}>و</span>
+              <div className="flex h-9 w-9 md:h-11 md:w-11 items-center justify-center rounded-lg md:rounded-xl bg-gradient-to-br from-primary via-primary to-emerald-600 text-primary-foreground shadow-lg shadow-primary/25 group-hover:shadow-xl group-hover:shadow-primary/30 transition-all duration-300">
+                <span className={`text-lg md:text-xl font-bold ${isRTL ? 'font-arabic' : ''}`}>و</span>
               </div>
               <div className="absolute -inset-1 rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10 blur-sm" />
             </div>
             <span className={cn(
-              'text-xl font-bold text-foreground leading-none tracking-tight',
+              'text-lg md:text-xl font-bold text-foreground leading-none tracking-tight hidden xs:inline',
               isRTL && 'font-arabic'
             )}>
               {t.brand}
@@ -225,13 +225,13 @@ export function EnhancedHeader({ showNav = true }: EnhancedHeaderProps) {
           )}
 
           {/* Right Side Actions */}
-          <div className="flex items-center gap-2">
-            {/* Mobile Quick Actions */}
-            <div className="lg:hidden flex items-center gap-1">
+          <div className="flex items-center gap-1 md:gap-2">
+            {/* Mobile Quick Actions - Smaller on mobile */}
+            <div className="lg:hidden flex items-center">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 rounded-full"
+                className="h-8 w-8 md:h-9 md:w-9 rounded-full"
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
               >
                 {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
@@ -239,7 +239,7 @@ export function EnhancedHeader({ showNav = true }: EnhancedHeaderProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 rounded-full"
+                className="h-8 w-8 md:h-9 md:w-9 rounded-full"
                 onClick={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
               >
                 <Globe className="h-4 w-4" />

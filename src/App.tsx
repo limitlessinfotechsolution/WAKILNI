@@ -44,6 +44,7 @@ import ProfileSettingsPage from "./pages/settings/ProfileSettingsPage";
 import ServicesPage from "./pages/services/ServicesPage";
 import CalendarPage from "./pages/provider/CalendarPage";
 import AvailabilityPage from "./pages/provider/AvailabilityPage";
+import GalleryPage from "./pages/provider/GalleryPage";
 import ProviderProfilePage from "./pages/providers/ProviderProfilePage";
 import InstallPage from "./pages/pwa/InstallPage";
 
@@ -147,6 +148,7 @@ function AppRoutes() {
       <Route path="/provider/kyc" element={<ProtectedRoute allowedRoles={['provider', 'admin', 'super_admin']}><KycPage /></ProtectedRoute>} />
       <Route path="/provider/services" element={<ProtectedRoute allowedRoles={['provider', 'admin', 'super_admin']}><ProviderServicesPage /></ProtectedRoute>} />
       <Route path="/provider/reviews" element={<ProtectedRoute allowedRoles={['provider', 'admin', 'super_admin']}><ReviewsPage /></ProtectedRoute>} />
+      <Route path="/provider/gallery" element={<ProtectedRoute allowedRoles={['provider', 'admin', 'super_admin']}><GalleryPage /></ProtectedRoute>} />
       
       {/* Public Provider Profile */}
       <Route path="/providers/:id" element={<ProviderProfilePage />} />
