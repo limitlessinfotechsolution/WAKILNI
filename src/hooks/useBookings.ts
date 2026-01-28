@@ -2,10 +2,9 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
-import type { Tables, TablesInsert } from '@/integrations/supabase/types';
+import type { Tables } from '@/integrations/supabase/types';
 
 export type Booking = Tables<'bookings'>;
-export type BookingInsert = TablesInsert<'bookings'>;
 export type BookingStatus = 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled' | 'disputed';
 
 interface BookingWithDetails extends Booking {
@@ -29,6 +28,14 @@ interface BookingWithDetails extends Booking {
     company_name_ar: string | null;
     rating: number | null;
   } | null;
+}
+
+// Secure booking creation request - no client-side price calculation
+interface CreateBookingRequest {
+  service_id: string;
+  beneficiary_id: string;
+  scheduled_date: string | null;
+  special_requests: string | null;
 }
 
 export function useBookings() {
@@ -84,28 +91,39 @@ export function useBookings() {
     }
   };
 
-  const createBooking = async (booking: Omit<BookingInsert, 'traveler_id'>) => {
+  // Secure booking creation via Edge Function - price calculated server-side
+  const createBooking = async (bookingRequest: CreateBookingRequest) => {
     if (!user) return null;
 
     try {
-      const { data, error } = await supabase
-        .from('bookings')
-        .insert({
-          ...booking,
-          traveler_id: user.id,
-        })
-        .select()
-        .single();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('No valid session');
+      }
 
-      if (error) throw error;
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-booking`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            service_id: bookingRequest.service_id,
+            beneficiary_id: bookingRequest.beneficiary_id,
+            scheduled_date: bookingRequest.scheduled_date,
+            special_requests: bookingRequest.special_requests,
+          }),
+        }
+      );
 
-      // Log activity
-      await supabase.from('booking_activities').insert({
-        booking_id: data.id,
-        actor_id: user.id,
-        action: 'created',
-        details: { status: 'pending' },
-      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create booking');
+      }
 
       toast({
         title: 'Success',
@@ -113,12 +131,12 @@ export function useBookings() {
       });
 
       await fetchBookings();
-      return data;
+      return result.data;
     } catch (error) {
       console.error('Error creating booking:', error);
       toast({
         title: 'Error',
-        description: 'Failed to create booking',
+        description: error instanceof Error ? error.message : 'Failed to create booking',
         variant: 'destructive',
       });
       return null;

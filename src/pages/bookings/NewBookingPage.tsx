@@ -13,15 +13,12 @@ export default function NewBookingPage() {
   const handleComplete = async (data: BookingData) => {
     if (!data.service || !data.beneficiary) return;
 
+    // Secure booking creation - price is calculated server-side
     const booking = await createBooking({
       service_id: data.service.id,
       beneficiary_id: data.beneficiary.id,
-      provider_id: data.service.provider_id,
       scheduled_date: data.scheduledDate ? format(data.scheduledDate, 'yyyy-MM-dd') : null,
       special_requests: data.specialRequests || null,
-      total_amount: data.service.price * 1.05, // Including 5% service fee
-      currency: data.service.currency || 'SAR',
-      status: 'pending',
     });
 
     if (booking) {
