@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import { 
   Settings, Power, AlertTriangle, Users, Calendar, Heart, 
-  Shield, Check, X, RefreshCw
+  Shield, RefreshCw, Server, Zap, Database
 } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { useLanguage } from '@/lib/i18n';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { useAuth } from '@/lib/auth';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -27,6 +26,9 @@ import {
   AlertDescription,
   AlertTitle,
 } from '@/components/ui/alert';
+import { GlassCard, GlassCardContent, GlassCardHeader } from '@/components/cards/GlassCard';
+import { RingChart } from '@/components/data-display/RingChart';
+import { cn } from '@/lib/utils';
 import type { Json } from '@/integrations/supabase/types';
 
 export default function SystemSettingsPage() {
@@ -72,7 +74,7 @@ export default function SystemSettingsPage() {
   if (!isSuperAdmin) {
     return (
       <DashboardLayout>
-        <div className="container py-8 px-4">
+        <div className="p-6">
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>{isRTL ? 'غير مصرح' : 'Unauthorized'}</AlertTitle>
@@ -89,21 +91,71 @@ export default function SystemSettingsPage() {
 
   return (
     <DashboardLayout>
-      <div className="p-4 md:p-6">
+      <div className="p-4 md:p-6 space-y-6">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className={`text-2xl font-bold flex items-center gap-2 ${isRTL ? 'font-arabic' : ''}`}>
-            <Shield className="h-6 w-6 text-destructive" />
-            {isRTL ? 'إعدادات النظام' : 'System Settings'}
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            {isRTL ? 'تحكم المشرف الرئيسي في ميزات النظام' : 'Super Admin system controls'}
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-gradient-to-br from-red-500 to-rose-500 text-white shadow-lg">
+            <Shield className="h-5 w-5" />
+          </div>
+          <div>
+            <h1 className={cn('text-xl md:text-2xl font-bold', isRTL && 'font-arabic')}>
+              {isRTL ? 'إعدادات النظام' : 'System Settings'}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {isRTL ? 'تحكم المشرف الرئيسي في ميزات النظام' : 'Super Admin system controls'}
+            </p>
+          </div>
+        </div>
+
+        {/* System Health Indicators */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <GlassCard className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-emerald-500/10">
+                <Server className="h-4 w-4 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">{isRTL ? 'الخادم' : 'Server'}</p>
+                <Badge className="bg-emerald-500">{isRTL ? 'يعمل' : 'Online'}</Badge>
+              </div>
+            </div>
+          </GlassCard>
+          <GlassCard className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-blue-500/10">
+                <Database className="h-4 w-4 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">{isRTL ? 'قاعدة البيانات' : 'Database'}</p>
+                <Badge className="bg-blue-500">{isRTL ? 'متصل' : 'Connected'}</Badge>
+              </div>
+            </div>
+          </GlassCard>
+          <GlassCard className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-amber-500/10">
+                <Zap className="h-4 w-4 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">{isRTL ? 'الاستجابة' : 'Response'}</p>
+                <p className="text-sm font-bold">145ms</p>
+              </div>
+            </div>
+          </GlassCard>
+          <GlassCard className="p-4">
+            <div className="flex items-center gap-3">
+              <RingChart value={24} size={40} strokeWidth={5} showValue={false} />
+              <div>
+                <p className="text-xs text-muted-foreground">{isRTL ? 'التخزين' : 'Storage'}</p>
+                <p className="text-sm font-bold">2.4/10 GB</p>
+              </div>
+            </div>
+          </GlassCard>
         </div>
 
         {/* Emergency Shutdown Alert */}
         {emergencyShutdown?.enabled && (
-          <Alert variant="destructive" className="mb-6">
+          <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>{isRTL ? 'إيقاف طوارئ فعال' : 'Emergency Shutdown Active'}</AlertTitle>
             <AlertDescription className="flex items-center justify-between">
@@ -117,68 +169,66 @@ export default function SystemSettingsPage() {
 
         {/* Maintenance Mode Alert */}
         {maintenanceMode?.enabled && (
-          <Alert className="mb-6 border-yellow-500 bg-yellow-50">
-            <Settings className="h-4 w-4 text-yellow-600" />
-            <AlertTitle className="text-yellow-800">
+          <Alert className="border-amber-500 bg-amber-50 dark:bg-amber-950/20">
+            <Settings className="h-4 w-4 text-amber-600" />
+            <AlertTitle className="text-amber-800 dark:text-amber-200">
               {isRTL ? 'وضع الصيانة فعال' : 'Maintenance Mode Active'}
             </AlertTitle>
-            <AlertDescription className="text-yellow-700">
+            <AlertDescription className="text-amber-700 dark:text-amber-300">
               {maintenanceMode.message}
             </AlertDescription>
           </Alert>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
           {/* Emergency Shutdown */}
-          <Card className="border-destructive/50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-destructive">
+          <GlassCard variant="light" className="border-destructive/30">
+            <GlassCardHeader>
+              <div className="flex items-center gap-2 text-destructive">
                 <Power className="h-5 w-5" />
-                {isRTL ? 'إيقاف الطوارئ' : 'Emergency Shutdown'}
-              </CardTitle>
-              <CardDescription>
+                <h3 className="font-semibold">{isRTL ? 'إيقاف الطوارئ' : 'Emergency Shutdown'}</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
                 {isRTL 
                   ? 'إيقاف كامل للتطبيق في حالات الاحتيال أو انتهاك الشروط'
                   : 'Complete app shutdown for fraud or terms violations'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+              </p>
+            </GlassCardHeader>
+            <GlassCardContent>
               <div className="flex items-center justify-between">
-                <div>
-                  <Badge variant={emergencyShutdown?.enabled ? 'destructive' : 'outline'}>
-                    {emergencyShutdown?.enabled 
-                      ? (isRTL ? 'فعال' : 'Active')
-                      : (isRTL ? 'غير فعال' : 'Inactive')
-                    }
-                  </Badge>
-                </div>
+                <Badge variant={emergencyShutdown?.enabled ? 'destructive' : 'outline'}>
+                  {emergencyShutdown?.enabled 
+                    ? (isRTL ? 'فعال' : 'Active')
+                    : (isRTL ? 'غير فعال' : 'Inactive')
+                  }
+                </Badge>
                 {!emergencyShutdown?.enabled ? (
                   <Button variant="destructive" onClick={() => setShutdownDialogOpen(true)}>
-                    <Power className="h-4 w-4 mr-2" />
+                    <Power className="h-4 w-4 me-2" />
                     {isRTL ? 'تفعيل الإيقاف' : 'Activate Shutdown'}
                   </Button>
                 ) : (
                   <Button variant="outline" onClick={handleDisableShutdown}>
-                    <RefreshCw className="h-4 w-4 mr-2" />
+                    <RefreshCw className="h-4 w-4 me-2" />
                     {isRTL ? 'إعادة التشغيل' : 'Restart'}
                   </Button>
                 )}
               </div>
-            </CardContent>
-          </Card>
+            </GlassCardContent>
+          </GlassCard>
 
           {/* Maintenance Mode */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+          <GlassCard>
+            <GlassCardHeader>
+              <div className="flex items-center gap-2">
                 <Settings className="h-5 w-5" />
-                {isRTL ? 'وضع الصيانة' : 'Maintenance Mode'}
-              </CardTitle>
-              <CardDescription>
+                <h3 className="font-semibold">{isRTL ? 'وضع الصيانة' : 'Maintenance Mode'}</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
                 {isRTL ? 'تعليق الوصول مؤقتًا للصيانة' : 'Temporarily suspend access for maintenance'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+              </p>
+            </GlassCardHeader>
+            <GlassCardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label>{isRTL ? 'تفعيل وضع الصيانة' : 'Enable Maintenance'}</Label>
                 <Switch
@@ -194,80 +244,80 @@ export default function SystemSettingsPage() {
                   placeholder={isRTL ? 'أدخل رسالة الصيانة...' : 'Enter maintenance message...'}
                 />
               </div>
-            </CardContent>
-          </Card>
+            </GlassCardContent>
+          </GlassCard>
 
           {/* Registration Controls */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+          <GlassCard>
+            <GlassCardHeader>
+              <div className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
-                {isRTL ? 'التسجيل' : 'Registration'}
-              </CardTitle>
-              <CardDescription>
+                <h3 className="font-semibold">{isRTL ? 'التسجيل' : 'Registration'}</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
                 {isRTL ? 'التحكم في تسجيل المستخدمين الجدد' : 'Control new user registration'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
+              </p>
+            </GlassCardHeader>
+            <GlassCardContent className="space-y-4">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                 <Label>{isRTL ? 'تسجيل المسافرين' : 'Traveler Registration'}</Label>
                 <Switch
                   checked={registrationEnabled?.travelers || false}
                   onCheckedChange={() => handleToggle('registration_enabled', registrationEnabled as Json, 'travelers')}
                 />
               </div>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                 <Label>{isRTL ? 'تسجيل مقدمي الخدمات' : 'Provider Registration'}</Label>
                 <Switch
                   checked={registrationEnabled?.providers || false}
                   onCheckedChange={() => handleToggle('registration_enabled', registrationEnabled as Json, 'providers')}
                 />
               </div>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                 <Label>{isRTL ? 'تسجيل الوكلاء' : 'Vendor Registration'}</Label>
                 <Switch
                   checked={registrationEnabled?.vendors || false}
                   onCheckedChange={() => handleToggle('registration_enabled', registrationEnabled as Json, 'vendors')}
                 />
               </div>
-            </CardContent>
-          </Card>
+            </GlassCardContent>
+          </GlassCard>
 
           {/* Booking Controls */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+          <GlassCard>
+            <GlassCardHeader>
+              <div className="flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
-                {isRTL ? 'الحجوزات' : 'Bookings'}
-              </CardTitle>
-              <CardDescription>
+                <h3 className="font-semibold">{isRTL ? 'الحجوزات' : 'Bookings'}</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
                 {isRTL ? 'التحكم في نظام الحجز' : 'Control the booking system'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
+              </p>
+            </GlassCardHeader>
+            <GlassCardContent className="space-y-4">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                 <Label>{isRTL ? 'تفعيل الحجوزات' : 'Enable Bookings'}</Label>
                 <Switch
                   checked={bookingEnabled?.enabled || false}
                   onCheckedChange={() => handleToggle('booking_enabled', bookingEnabled as Json, 'enabled')}
                 />
               </div>
-            </CardContent>
-          </Card>
+            </GlassCardContent>
+          </GlassCard>
 
           {/* Donations Controls */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+          <GlassCard>
+            <GlassCardHeader>
+              <div className="flex items-center gap-2">
                 <Heart className="h-5 w-5" />
-                {isRTL ? 'التبرعات' : 'Donations'}
-              </CardTitle>
-              <CardDescription>
+                <h3 className="font-semibold">{isRTL ? 'التبرعات' : 'Donations'}</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
                 {isRTL ? 'التحكم في نظام التبرعات' : 'Control the donation system'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
+              </p>
+            </GlassCardHeader>
+            <GlassCardContent className="space-y-4">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                 <Label>{isRTL ? 'تفعيل التبرعات' : 'Enable Donations'}</Label>
                 <Switch
                   checked={donationsEnabled?.enabled || false}
@@ -282,21 +332,21 @@ export default function SystemSettingsPage() {
                   onChange={(e) => handleUpdateValue('donations_enabled', donationsEnabled as Json, 'minimum_amount', parseInt(e.target.value))}
                 />
               </div>
-            </CardContent>
-          </Card>
+            </GlassCardContent>
+          </GlassCard>
 
           {/* Platform Fees */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+          <GlassCard>
+            <GlassCardHeader>
+              <div className="flex items-center gap-2">
                 <Settings className="h-5 w-5" />
-                {isRTL ? 'عمولات المنصة' : 'Platform Fees'}
-              </CardTitle>
-              <CardDescription>
+                <h3 className="font-semibold">{isRTL ? 'عمولات المنصة' : 'Platform Fees'}</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
                 {isRTL ? 'نسب العمولة للمنصة' : 'Platform commission percentages'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+              </p>
+            </GlassCardHeader>
+            <GlassCardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>{isRTL ? 'عمولة مقدمي الخدمات (%)' : 'Provider Fee (%)'}</Label>
                 <Input
@@ -313,8 +363,8 @@ export default function SystemSettingsPage() {
                   onChange={(e) => handleUpdateValue('platform_fees', platformFees as Json, 'vendor_percentage', parseInt(e.target.value))}
                 />
               </div>
-            </CardContent>
-          </Card>
+            </GlassCardContent>
+          </GlassCard>
         </div>
 
         {/* Emergency Shutdown Dialog */}
@@ -347,7 +397,7 @@ export default function SystemSettingsPage() {
                 {isRTL ? 'إلغاء' : 'Cancel'}
               </Button>
               <Button variant="destructive" onClick={handleEmergencyShutdown} disabled={!shutdownReason}>
-                <Power className="h-4 w-4 mr-2" />
+                <Power className="h-4 w-4 me-2" />
                 {isRTL ? 'تأكيد الإيقاف' : 'Confirm Shutdown'}
               </Button>
             </DialogFooter>

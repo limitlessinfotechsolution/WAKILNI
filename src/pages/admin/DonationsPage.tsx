@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import { Heart, DollarSign, Users, TrendingUp, Check, X, ArrowRight } from 'lucide-react';
-import { MainLayout } from '@/components/layout';
+import { Heart, DollarSign, Users, TrendingUp, Check, X, ArrowRight, Download } from 'lucide-react';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { useLanguage } from '@/lib/i18n';
 import { useDonations } from '@/hooks/useDonations';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -26,6 +25,10 @@ import {
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { StatCard } from '@/components/cards/StatCard';
+import { GlassCard, GlassCardContent, GlassCardHeader } from '@/components/cards/GlassCard';
+import { RingChart } from '@/components/data-display/RingChart';
+import { cn } from '@/lib/utils';
 
 export default function DonationsPage() {
   const { isRTL } = useLanguage();
@@ -51,36 +54,8 @@ export default function DonationsPage() {
   const [allocateAmount, setAllocateAmount] = useState('');
   const [selectedDonation, setSelectedDonation] = useState('');
 
-  const stats = [
-    {
-      title: isRTL ? 'إجمالي التبرعات' : 'Total Donated',
-      value: `SAR ${totalDonated.toLocaleString()}`,
-      icon: <DollarSign className="h-5 w-5" />,
-      color: 'text-green-600',
-      bgColor: 'bg-green-100',
-    },
-    {
-      title: isRTL ? 'المخصص' : 'Allocated',
-      value: `SAR ${totalAllocated.toLocaleString()}`,
-      icon: <TrendingUp className="h-5 w-5" />,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-100',
-    },
-    {
-      title: isRTL ? 'المتاح' : 'Available',
-      value: `SAR ${availableFunds.toLocaleString()}`,
-      icon: <Heart className="h-5 w-5" />,
-      color: 'text-red-600',
-      bgColor: 'bg-red-100',
-    },
-    {
-      title: isRTL ? 'الطلبات المعلقة' : 'Pending Requests',
-      value: charityRequests.filter(r => r.status === 'pending').length.toString(),
-      icon: <Users className="h-5 w-5" />,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-100',
-    },
-  ];
+  const pendingCount = charityRequests.filter(r => r.status === 'pending').length;
+  const allocationPercentage = totalDonated > 0 ? (totalAllocated / totalDonated) * 100 : 0;
 
   const getStatusBadge = (status: string | null) => {
     switch (status) {
@@ -143,34 +118,91 @@ export default function DonationsPage() {
   };
 
   return (
-    <MainLayout>
-      <div className="container py-8 px-4">
+    <DashboardLayout>
+      <div className="p-4 md:p-6 space-y-6">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className={`text-2xl font-bold ${isRTL ? 'font-arabic' : ''}`}>
-            {isRTL ? 'التبرعات والصدقات' : 'Donations & Charity'}
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            {isRTL ? 'إدارة التبرعات وطلبات الصدقة' : 'Manage donations and charity requests'}
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-rose-500 to-pink-500 text-white shadow-lg">
+              <Heart className="h-5 w-5" />
+            </div>
+            <div>
+              <h1 className={cn('text-xl md:text-2xl font-bold', isRTL && 'font-arabic')}>
+                {isRTL ? 'التبرعات والصدقات' : 'Donations & Charity'}
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                {isRTL ? 'إدارة التبرعات وطلبات الصدقة' : 'Manage donations and charity requests'}
+              </p>
+            </div>
+          </div>
+          <Button variant="outline" size="sm">
+            <Download className="h-4 w-4 me-2" />
+            {isRTL ? 'تصدير' : 'Export'}
+          </Button>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {stats.map((stat, index) => (
-            <Card key={index}>
-              <CardContent className="pt-4 pb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-muted-foreground">{stat.title}</p>
-                  <div className={`p-1.5 rounded-lg ${stat.bgColor} ${stat.color}`}>
-                    {stat.icon}
-                  </div>
-                </div>
-                <p className="text-xl font-bold">{isLoading ? '...' : stat.value}</p>
-              </CardContent>
-            </Card>
-          ))}
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+          <StatCard
+            title={isRTL ? 'إجمالي التبرعات' : 'Total Donated'}
+            value={isLoading ? '...' : `SAR ${totalDonated.toLocaleString()}`}
+            icon={DollarSign}
+            iconBgColor="bg-emerald-500/10"
+          />
+          <StatCard
+            title={isRTL ? 'المخصص' : 'Allocated'}
+            value={isLoading ? '...' : `SAR ${totalAllocated.toLocaleString()}`}
+            icon={TrendingUp}
+            iconBgColor="bg-blue-500/10"
+          />
+          <StatCard
+            title={isRTL ? 'المتاح' : 'Available'}
+            value={isLoading ? '...' : `SAR ${availableFunds.toLocaleString()}`}
+            icon={Heart}
+            iconBgColor="bg-rose-500/10"
+          />
+          <StatCard
+            title={isRTL ? 'الطلبات المعلقة' : 'Pending Requests'}
+            value={isLoading ? '...' : pendingCount.toString()}
+            icon={Users}
+            iconBgColor="bg-amber-500/10"
+          />
         </div>
+
+        {/* Impact Visualization */}
+        <GlassCard variant="gradient" className="p-4 md:p-6">
+          <div className="flex flex-col md:flex-row items-center gap-6">
+            <RingChart
+              value={allocationPercentage}
+              size={100}
+              strokeWidth={10}
+              color="hsl(var(--primary))"
+              label={isRTL ? 'مخصص' : 'Allocated'}
+            />
+            <div className="flex-1 text-center md:text-start">
+              <h3 className={cn('text-lg font-semibold mb-2', isRTL && 'font-arabic')}>
+                {isRTL ? 'تأثير التبرعات' : 'Donation Impact'}
+              </h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                {isRTL 
+                  ? `تم تخصيص ${allocationPercentage.toFixed(1)}% من التبرعات لمساعدة المحتاجين`
+                  : `${allocationPercentage.toFixed(1)}% of donations have been allocated to help those in need`}
+              </p>
+              <div className="flex flex-wrap gap-4 justify-center md:justify-start text-sm">
+                <div>
+                  <span className="text-muted-foreground">{isRTL ? 'عدد المتبرعين:' : 'Total Donors:'}</span>
+                  <span className="font-semibold ms-2">{donations.length}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">{isRTL ? 'الطلبات المموّلة:' : 'Funded Requests:'}</span>
+                  <span className="font-semibold ms-2">
+                    {charityRequests.filter(r => r.status === 'funded' || r.status === 'completed').length}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </GlassCard>
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -183,11 +215,13 @@ export default function DonationsPage() {
           {/* Overview Tab */}
           <TabsContent value="overview">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>{isRTL ? 'أحدث التبرعات' : 'Recent Donations'}</CardTitle>
-                </CardHeader>
-                <CardContent>
+              <GlassCard>
+                <GlassCardHeader>
+                  <h3 className={cn('text-lg font-semibold', isRTL && 'font-arabic')}>
+                    {isRTL ? 'أحدث التبرعات' : 'Recent Donations'}
+                  </h3>
+                </GlassCardHeader>
+                <GlassCardContent>
                   {donations.slice(0, 5).map((donation) => (
                     <div key={donation.id} className="flex items-center justify-between py-3 border-b last:border-0">
                       <div>
@@ -201,19 +235,26 @@ export default function DonationsPage() {
                           {new Date(donation.created_at).toLocaleDateString()}
                         </p>
                       </div>
-                      <p className="font-bold text-green-600">
+                      <p className="font-bold text-emerald-600">
                         SAR {donation.amount.toLocaleString()}
                       </p>
                     </div>
                   ))}
-                </CardContent>
-              </Card>
+                  {donations.length === 0 && (
+                    <p className="text-center text-muted-foreground py-8">
+                      {isRTL ? 'لا توجد تبرعات بعد' : 'No donations yet'}
+                    </p>
+                  )}
+                </GlassCardContent>
+              </GlassCard>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>{isRTL ? 'طلبات معلقة' : 'Pending Requests'}</CardTitle>
-                </CardHeader>
-                <CardContent>
+              <GlassCard>
+                <GlassCardHeader>
+                  <h3 className={cn('text-lg font-semibold', isRTL && 'font-arabic')}>
+                    {isRTL ? 'طلبات معلقة' : 'Pending Requests'}
+                  </h3>
+                </GlassCardHeader>
+                <GlassCardContent>
                   {charityRequests.filter(r => r.status === 'pending').slice(0, 5).map((request) => (
                     <div key={request.id} className="flex items-center justify-between py-3 border-b last:border-0">
                       <div>
@@ -234,21 +275,30 @@ export default function DonationsPage() {
                       </div>
                     </div>
                   ))}
-                </CardContent>
-              </Card>
+                  {charityRequests.filter(r => r.status === 'pending').length === 0 && (
+                    <p className="text-center text-muted-foreground py-8">
+                      {isRTL ? 'لا توجد طلبات معلقة' : 'No pending requests'}
+                    </p>
+                  )}
+                </GlassCardContent>
+              </GlassCard>
             </div>
           </TabsContent>
 
           {/* Donations Tab */}
           <TabsContent value="donations">
-            <Card>
-              <CardHeader>
-                <CardTitle>{isRTL ? 'قائمة التبرعات' : 'Donations List'}</CardTitle>
-                <CardDescription>
-                  {isRTL ? `إجمالي: ${donations.length} تبرع` : `Total: ${donations.length} donations`}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+            <GlassCard>
+              <GlassCardHeader>
+                <div className="flex items-center justify-between">
+                  <h3 className={cn('text-lg font-semibold', isRTL && 'font-arabic')}>
+                    {isRTL ? 'قائمة التبرعات' : 'Donations List'}
+                  </h3>
+                  <Badge variant="secondary">
+                    {isRTL ? `${donations.length} تبرع` : `${donations.length} donations`}
+                  </Badge>
+                </div>
+              </GlassCardHeader>
+              <GlassCardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -261,7 +311,7 @@ export default function DonationsPage() {
                   </TableHeader>
                   <TableBody>
                     {donations.map((donation) => (
-                      <TableRow key={donation.id}>
+                      <TableRow key={donation.id} className="group hover:bg-muted/50">
                         <TableCell>
                           {donation.is_anonymous 
                             ? (isRTL ? 'متبرع مجهول' : 'Anonymous')
@@ -284,20 +334,24 @@ export default function DonationsPage() {
                     ))}
                   </TableBody>
                 </Table>
-              </CardContent>
-            </Card>
+              </GlassCardContent>
+            </GlassCard>
           </TabsContent>
 
           {/* Requests Tab */}
           <TabsContent value="requests">
-            <Card>
-              <CardHeader>
-                <CardTitle>{isRTL ? 'طلبات الصدقة' : 'Charity Requests'}</CardTitle>
-                <CardDescription>
-                  {isRTL ? `إجمالي: ${charityRequests.length} طلب` : `Total: ${charityRequests.length} requests`}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+            <GlassCard>
+              <GlassCardHeader>
+                <div className="flex items-center justify-between">
+                  <h3 className={cn('text-lg font-semibold', isRTL && 'font-arabic')}>
+                    {isRTL ? 'طلبات الصدقة' : 'Charity Requests'}
+                  </h3>
+                  <Badge variant="secondary">
+                    {isRTL ? `${charityRequests.length} طلب` : `${charityRequests.length} requests`}
+                  </Badge>
+                </div>
+              </GlassCardHeader>
+              <GlassCardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -311,7 +365,7 @@ export default function DonationsPage() {
                   </TableHeader>
                   <TableBody>
                     {charityRequests.map((request) => (
-                      <TableRow key={request.id}>
+                      <TableRow key={request.id} className="group hover:bg-muted/50">
                         <TableCell>
                           {request.beneficiary?.full_name || request.beneficiary?.full_name_ar || 'N/A'}
                         </TableCell>
@@ -334,7 +388,7 @@ export default function DonationsPage() {
                                 variant="outline"
                                 onClick={() => openApproveDialog(request)}
                               >
-                                <Check className="h-4 w-4 mr-1" />
+                                <Check className="h-4 w-4 me-1" />
                                 {isRTL ? 'اعتماد' : 'Approve'}
                               </Button>
                               <Button 
@@ -342,7 +396,7 @@ export default function DonationsPage() {
                                 variant="outline"
                                 onClick={() => openRejectDialog(request)}
                               >
-                                <X className="h-4 w-4 mr-1" />
+                                <X className="h-4 w-4 me-1" />
                                 {isRTL ? 'رفض' : 'Reject'}
                               </Button>
                             </div>
@@ -352,7 +406,7 @@ export default function DonationsPage() {
                               size="sm"
                               onClick={() => openAllocateDialog(request)}
                             >
-                              <ArrowRight className="h-4 w-4 mr-1" />
+                              <ArrowRight className="h-4 w-4 me-1" />
                               {isRTL ? 'تخصيص' : 'Allocate'}
                             </Button>
                           )}
@@ -361,8 +415,8 @@ export default function DonationsPage() {
                     ))}
                   </TableBody>
                 </Table>
-              </CardContent>
-            </Card>
+              </GlassCardContent>
+            </GlassCard>
           </TabsContent>
         </Tabs>
 
@@ -430,25 +484,24 @@ export default function DonationsPage() {
             <DialogHeader>
               <DialogTitle>{isRTL ? 'تخصيص الأموال' : 'Allocate Funds'}</DialogTitle>
               <DialogDescription>
-                {isRTL ? 'اختر تبرعًا لتخصيص الأموال منه' : 'Select a donation to allocate funds from'}
+                {isRTL ? 'حدد التبرع ومبلغ التخصيص' : 'Select the donation and allocation amount'}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label>{isRTL ? 'اختر التبرع' : 'Select Donation'}</Label>
+                <Label>{isRTL ? 'التبرع' : 'Donation'}</Label>
                 <select
-                  className="w-full border rounded-md p-2"
+                  className="w-full p-2 border rounded-md"
                   value={selectedDonation}
                   onChange={(e) => setSelectedDonation(e.target.value)}
                 >
-                  <option value="">{isRTL ? 'اختر تبرعًا' : 'Select a donation'}</option>
-                  {donations
-                    .filter(d => (d.amount - (d.allocated_amount || 0)) > 0)
-                    .map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.donor_name || 'Anonymous'} - SAR {(d.amount - (d.allocated_amount || 0)).toLocaleString()} available
-                      </option>
-                    ))}
+                  <option value="">{isRTL ? 'اختر تبرعاً...' : 'Select a donation...'}</option>
+                  {donations.filter(d => (d.amount - (d.allocated_amount || 0)) > 0).map(d => (
+                    <option key={d.id} value={d.id}>
+                      {d.donor_name || (isRTL ? 'مجهول' : 'Anonymous')} - 
+                      SAR {(d.amount - (d.allocated_amount || 0)).toLocaleString()} {isRTL ? 'متاح' : 'available'}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="space-y-2">
@@ -472,6 +525,6 @@ export default function DonationsPage() {
           </DialogContent>
         </Dialog>
       </div>
-    </MainLayout>
+    </DashboardLayout>
   );
 }

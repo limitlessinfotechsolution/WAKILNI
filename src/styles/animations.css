@@ -237,7 +237,7 @@
 }
 
 /* Float animation for decorative elements */
-@keyframes float {
+@keyframes float-gentle {
   0%, 100% { 
     transform: translateY(0) rotate(0deg); 
   }
@@ -301,6 +301,103 @@
   to { 
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* ========== NEW PHASE 3 ANIMATIONS ========== */
+
+/* Counter up animation for stats */
+@keyframes counter-up {
+  from { 
+    opacity: 0; 
+    transform: translateY(10px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+/* Milestone celebration */
+@keyframes milestone-celebration {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+/* GPS pulse for location indicators */
+@keyframes gps-pulse {
+  0%, 100% { 
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 0.5;
+    transform: scale(1.1);
+  }
+}
+
+/* Signal bar animation */
+@keyframes signal-bar {
+  from { 
+    height: 0; 
+    opacity: 0;
+  }
+  to { 
+    height: 100%; 
+    opacity: 1;
+  }
+}
+
+/* Waveform audio visualization */
+@keyframes waveform {
+  0%, 100% { 
+    transform: scaleY(0.3);
+  }
+  50% { 
+    transform: scaleY(1);
+  }
+}
+
+/* Recording pulse */
+@keyframes recording-pulse {
+  0%, 100% { 
+    opacity: 1;
+    box-shadow: 0 0 0 0 hsl(0 84% 60% / 0.4);
+  }
+  50% { 
+    opacity: 0.8;
+    box-shadow: 0 0 0 10px hsl(0 84% 60% / 0);
+  }
+}
+
+/* Live indicator */
+@keyframes live-pulse {
+  0%, 100% { 
+    opacity: 1;
+  }
+  50% { 
+    opacity: 0.4;
+  }
+}
+
+/* Progress ring animation */
+@keyframes progress-ring {
+  from { 
+    stroke-dashoffset: 100;
+  }
+  to { 
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Skeleton loading shimmer */
+@keyframes skeleton-shimmer {
+  0% { 
+    background-position: -200% 0; 
+  }
+  100% { 
+    background-position: 200% 0; 
   }
 }
 
@@ -382,11 +479,39 @@
 }
 
 .animate-float {
-  animation: float 6s var(--ease-in-out) infinite;
+  animation: float-gentle 6s var(--ease-in-out) infinite;
 }
 
 .animate-badge-pop {
   animation: badge-pop var(--duration-normal) var(--spring-bounce);
+}
+
+.animate-counter-up {
+  animation: counter-up 0.5s var(--spring-smooth) forwards;
+}
+
+.animate-milestone {
+  animation: milestone-celebration 0.6s var(--spring-bounce);
+}
+
+.animate-gps-pulse {
+  animation: gps-pulse 2s ease-in-out infinite;
+}
+
+.animate-signal-bar {
+  animation: signal-bar 0.3s ease-out forwards;
+}
+
+.animate-waveform {
+  animation: waveform 0.5s ease-in-out infinite;
+}
+
+.animate-recording {
+  animation: recording-pulse 1.5s ease-in-out infinite;
+}
+
+.animate-live {
+  animation: live-pulse 1s ease-in-out infinite;
 }
 
 /* ========== TRANSITION UTILITIES ========== */
