@@ -274,6 +274,72 @@ export type Database = {
           },
         ]
       }
+      completion_certificates: {
+        Row: {
+          all_steps_verified: boolean | null
+          beneficiary_name: string
+          beneficiary_name_ar: string | null
+          booking_id: string
+          certificate_number: string
+          completed_date: string
+          created_at: string | null
+          hijri_date: string | null
+          id: string
+          issued_at: string | null
+          location: string | null
+          pilgrim_id: string
+          qr_verification_code: string
+          service_type: Database["public"]["Enums"]["service_type"]
+        }
+        Insert: {
+          all_steps_verified?: boolean | null
+          beneficiary_name: string
+          beneficiary_name_ar?: string | null
+          booking_id: string
+          certificate_number: string
+          completed_date: string
+          created_at?: string | null
+          hijri_date?: string | null
+          id?: string
+          issued_at?: string | null
+          location?: string | null
+          pilgrim_id: string
+          qr_verification_code: string
+          service_type: Database["public"]["Enums"]["service_type"]
+        }
+        Update: {
+          all_steps_verified?: boolean | null
+          beneficiary_name?: string
+          beneficiary_name_ar?: string | null
+          booking_id?: string
+          certificate_number?: string
+          completed_date?: string
+          created_at?: string | null
+          hijri_date?: string | null
+          id?: string
+          issued_at?: string | null
+          location?: string | null
+          pilgrim_id?: string
+          qr_verification_code?: string
+          service_type?: Database["public"]["Enums"]["service_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "completion_certificates_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "completion_certificates_pilgrim_id_fkey"
+            columns: ["pilgrim_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       donation_allocations: {
         Row: {
           allocated_at: string
@@ -447,6 +513,125 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      pilgrim_certifications: {
+        Row: {
+          created_at: string | null
+          current_active_badal: number | null
+          government_id_url: string | null
+          government_id_verified: boolean | null
+          has_completed_own_hajj: boolean | null
+          has_completed_own_umrah: boolean | null
+          id: string
+          last_violation_date: string | null
+          max_active_badal: number | null
+          own_hajj_date: string | null
+          own_umrah_date: string | null
+          photo_verification_url: string | null
+          photo_verified: boolean | null
+          provider_id: string
+          scholar_approval_date: string | null
+          scholar_approved: boolean | null
+          scholar_id: string | null
+          scholar_notes: string | null
+          status: Database["public"]["Enums"]["pilgrim_status"] | null
+          submitted_at: string | null
+          suspended_at: string | null
+          suspension_reason: string | null
+          total_completed_rituals: number | null
+          trust_score: number | null
+          umrah_permit_history: Json | null
+          updated_at: string | null
+          verified_at: string | null
+          video_oath_transcript: string | null
+          video_oath_url: string | null
+          video_oath_verified: boolean | null
+          video_oath_verified_at: string | null
+          video_oath_verified_by: string | null
+          violation_count: number | null
+          violations: Json | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_active_badal?: number | null
+          government_id_url?: string | null
+          government_id_verified?: boolean | null
+          has_completed_own_hajj?: boolean | null
+          has_completed_own_umrah?: boolean | null
+          id?: string
+          last_violation_date?: string | null
+          max_active_badal?: number | null
+          own_hajj_date?: string | null
+          own_umrah_date?: string | null
+          photo_verification_url?: string | null
+          photo_verified?: boolean | null
+          provider_id: string
+          scholar_approval_date?: string | null
+          scholar_approved?: boolean | null
+          scholar_id?: string | null
+          scholar_notes?: string | null
+          status?: Database["public"]["Enums"]["pilgrim_status"] | null
+          submitted_at?: string | null
+          suspended_at?: string | null
+          suspension_reason?: string | null
+          total_completed_rituals?: number | null
+          trust_score?: number | null
+          umrah_permit_history?: Json | null
+          updated_at?: string | null
+          verified_at?: string | null
+          video_oath_transcript?: string | null
+          video_oath_url?: string | null
+          video_oath_verified?: boolean | null
+          video_oath_verified_at?: string | null
+          video_oath_verified_by?: string | null
+          violation_count?: number | null
+          violations?: Json | null
+        }
+        Update: {
+          created_at?: string | null
+          current_active_badal?: number | null
+          government_id_url?: string | null
+          government_id_verified?: boolean | null
+          has_completed_own_hajj?: boolean | null
+          has_completed_own_umrah?: boolean | null
+          id?: string
+          last_violation_date?: string | null
+          max_active_badal?: number | null
+          own_hajj_date?: string | null
+          own_umrah_date?: string | null
+          photo_verification_url?: string | null
+          photo_verified?: boolean | null
+          provider_id?: string
+          scholar_approval_date?: string | null
+          scholar_approved?: boolean | null
+          scholar_id?: string | null
+          scholar_notes?: string | null
+          status?: Database["public"]["Enums"]["pilgrim_status"] | null
+          submitted_at?: string | null
+          suspended_at?: string | null
+          suspension_reason?: string | null
+          total_completed_rituals?: number | null
+          trust_score?: number | null
+          umrah_permit_history?: Json | null
+          updated_at?: string | null
+          verified_at?: string | null
+          video_oath_transcript?: string | null
+          video_oath_url?: string | null
+          video_oath_verified?: boolean | null
+          video_oath_verified_at?: string | null
+          video_oath_verified_by?: string | null
+          violation_count?: number | null
+          violations?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pilgrim_certifications_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: true
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -701,6 +886,106 @@ export type Database = {
           },
           {
             foreignKeyName: "reviews_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ritual_events: {
+        Row: {
+          beneficiary_id: string
+          beneficiary_name_mentioned: boolean | null
+          booking_id: string
+          created_at: string | null
+          device_fingerprint: string | null
+          dua_audio_url: string | null
+          dua_transcript: string | null
+          exif_data: Json | null
+          flag_reason: string | null
+          geo_location: Json | null
+          id: string
+          is_flagged: boolean | null
+          media_hash: string | null
+          media_type: string | null
+          media_url: string | null
+          provider_id: string
+          ritual_step: string
+          step_order: number
+          timestamp: string
+          verification_notes: string | null
+          verified: boolean | null
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          beneficiary_id: string
+          beneficiary_name_mentioned?: boolean | null
+          booking_id: string
+          created_at?: string | null
+          device_fingerprint?: string | null
+          dua_audio_url?: string | null
+          dua_transcript?: string | null
+          exif_data?: Json | null
+          flag_reason?: string | null
+          geo_location?: Json | null
+          id?: string
+          is_flagged?: boolean | null
+          media_hash?: string | null
+          media_type?: string | null
+          media_url?: string | null
+          provider_id: string
+          ritual_step: string
+          step_order: number
+          timestamp?: string
+          verification_notes?: string | null
+          verified?: boolean | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          beneficiary_id?: string
+          beneficiary_name_mentioned?: boolean | null
+          booking_id?: string
+          created_at?: string | null
+          device_fingerprint?: string | null
+          dua_audio_url?: string | null
+          dua_transcript?: string | null
+          exif_data?: Json | null
+          flag_reason?: string | null
+          geo_location?: Json | null
+          id?: string
+          is_flagged?: boolean | null
+          media_hash?: string | null
+          media_type?: string | null
+          media_url?: string | null
+          provider_id?: string
+          ritual_step?: string
+          step_order?: number
+          timestamp?: string
+          verification_notes?: string | null
+          verified?: boolean | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ritual_events_beneficiary_id_fkey"
+            columns: ["beneficiary_id"]
+            isOneToOne: false
+            referencedRelation: "beneficiaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ritual_events_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ritual_events_provider_id_fkey"
             columns: ["provider_id"]
             isOneToOne: false
             referencedRelation: "providers"
@@ -1227,6 +1512,12 @@ export type Database = {
         | "cancelled"
         | "disputed"
       kyc_status: "pending" | "under_review" | "approved" | "rejected"
+      pilgrim_status:
+        | "pending"
+        | "under_review"
+        | "verified"
+        | "suspended"
+        | "inactive"
       service_type: "umrah" | "hajj" | "ziyarat"
     }
     CompositeTypes: {
@@ -1366,6 +1657,13 @@ export const Constants = {
         "disputed",
       ],
       kyc_status: ["pending", "under_review", "approved", "rejected"],
+      pilgrim_status: [
+        "pending",
+        "under_review",
+        "verified",
+        "suspended",
+        "inactive",
+      ],
       service_type: ["umrah", "hajj", "ziyarat"],
     },
   },
