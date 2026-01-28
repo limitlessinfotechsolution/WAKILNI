@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useEffect } from 'react';
-import { Calendar, FileText, Star, Shield, ArrowRight, ArrowLeft, TrendingUp } from 'lucide-react';
+import { Calendar, FileText, Star, Shield, ArrowRight, ArrowLeft, TrendingUp, Clock, MapPin, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,12 +10,9 @@ import { useAuth } from '@/lib/auth';
 import { useProvider } from '@/hooks/useProvider';
 import { useProviderReviews } from '@/hooks/useReviews';
 import { GlassCard, GlassCardContent, StatCard } from '@/components/cards';
-import { 
-  EarningsWidget, 
-  PerformanceWidget, 
-  BookingsOverviewWidget, 
-  ClientsWidget 
-} from '@/components/dashboard/ProviderWidgets';
+import { SparklineChart } from '@/components/data-display/SparklineChart';
+import { RingChart } from '@/components/data-display/RingChart';
+import { FloatingActionButton } from '@/components/navigation/FloatingActionButton';
 import { cn } from '@/lib/utils';
 import { PullToRefresh } from '@/components/ui/pull-to-refresh';
 import { ProviderDashboardSkeleton } from '@/components/dashboard/DashboardSkeletons';
@@ -29,6 +26,9 @@ export default function ProviderDashboard() {
   const { isLoading, refresh, finishLoading } = useDashboardRefresh();
 
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
+
+  // Mock sparkline data for earnings trend
+  const earningsTrend = [120, 180, 150, 220, 280, 250, 320, 380, 350, 420, 480, 520];
 
   useEffect(() => {
     if (!providerLoading) {
@@ -45,6 +45,7 @@ export default function ProviderDashboard() {
   }
 
   const avgRating = reviewStats?.averageRating || 0;
+  const completionRate = provider?.total_bookings ? 100 : 0;
 
   const kycStatusBadge = () => {
     switch (provider?.kyc_status) {
@@ -59,10 +60,15 @@ export default function ProviderDashboard() {
     }
   };
 
+  const fabActions = [
+    { icon: <Calendar className="h-4 w-4" />, label: isRTL ? 'إدارة التوفر' : 'Manage Availability', onClick: () => {} },
+    { icon: <FileText className="h-4 w-4" />, label: isRTL ? 'إضافة خدمة' : 'Add Service', onClick: () => {} },
+  ];
+
   return (
     <DashboardLayout>
       <PullToRefresh onRefresh={refresh} className="h-full">
-        <div className="p-4 md:p-6 space-y-5 md:space-y-6">
+        <div className="p-4 md:p-6 space-y-5 md:space-y-6 pb-32">
           {/* Welcome Header - Premium styling */}
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 space-y-1">
@@ -117,25 +123,70 @@ export default function ProviderDashboard() {
             </GlassCard>
           )}
 
-          {/* Stats Grid - Using new StatCard */}
+          {/* Hero Earnings Card with Sparkline */}
+          <GlassCard variant="gradient" className="overflow-hidden">
+            <GlassCardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">
+                    {isRTL ? 'الأرباح هذا الشهر' : "This Month's Earnings"}
+                  </p>
+                  <p className="text-3xl md:text-4xl font-bold gradient-text-gold">
+                    SAR 0
+                  </p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-0">
+                      <TrendingUp className="h-3 w-3 mr-1" />
+                      +0%
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {isRTL ? 'مقارنة بالشهر الماضي' : 'vs last month'}
+                    </span>
+                  </div>
+                </div>
+                <div className="hidden sm:block">
+                  <SparklineChart 
+                    data={earningsTrend} 
+                    width={140} 
+                    height={60}
+                    color="hsl(var(--secondary))"
+                    showDots={false}
+                  />
+                </div>
+              </div>
+            </GlassCardContent>
+          </GlassCard>
+
+          {/* Performance Rings */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-            <StatCard
-              title={isRTL ? 'الأرباح' : 'Earnings'}
-              value="SAR 0"
-              subtitle={isRTL ? 'هذا الشهر' : 'This month'}
-              icon={TrendingUp}
-              iconBgColor="bg-emerald-500/10"
-              className="animate-fade-in-up"
-            />
-            <StatCard
-              title={isRTL ? 'التقييم' : 'Rating'}
-              value={avgRating.toFixed(1)}
-              subtitle={`${reviewStats?.totalReviews || 0} ${isRTL ? 'تقييم' : 'reviews'}`}
-              icon={Star}
-              iconBgColor="bg-amber-500/10"
-              className="animate-fade-in-up"
-              style={{ animationDelay: '50ms' }}
-            />
+            <GlassCard className="p-4 flex flex-col items-center justify-center">
+              <RingChart 
+                value={completionRate} 
+                size={70} 
+                strokeWidth={6}
+                color="hsl(var(--primary))"
+                label={isRTL ? 'إكمال' : 'Complete'}
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                {isRTL ? 'معدل الإكمال' : 'Completion Rate'}
+              </p>
+            </GlassCard>
+            
+            <GlassCard className="p-4 flex flex-col items-center justify-center">
+              <RingChart 
+                value={avgRating * 20} 
+                max={100}
+                size={70} 
+                strokeWidth={6}
+                color="hsl(38 92% 50%)"
+                valueFormatter={() => avgRating.toFixed(1)}
+                label={isRTL ? 'تقييم' : 'Rating'}
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                {isRTL ? 'التقييم المتوسط' : 'Avg Rating'}
+              </p>
+            </GlassCard>
+            
             <StatCard
               title={isRTL ? 'الحجوزات' : 'Bookings'}
               value={provider?.total_bookings || 0}
@@ -143,18 +194,51 @@ export default function ProviderDashboard() {
               icon={Calendar}
               iconBgColor="bg-blue-500/10"
               className="animate-fade-in-up"
-              style={{ animationDelay: '100ms' }}
             />
+            
             <StatCard
-              title={isRTL ? 'الإكمال' : 'Completion'}
-              value="100%"
-              subtitle={isRTL ? 'معدل النجاح' : 'Success rate'}
-              icon={FileText}
-              iconBgColor="bg-purple-500/10"
+              title={isRTL ? 'المراجعات' : 'Reviews'}
+              value={reviewStats?.totalReviews || 0}
+              subtitle={isRTL ? 'عدد' : 'Count'}
+              icon={Star}
+              iconBgColor="bg-amber-500/10"
               className="animate-fade-in-up"
-              style={{ animationDelay: '150ms' }}
             />
           </div>
+
+          {/* Today's Schedule */}
+          <GlassCard variant="heavy" hoverable={false}>
+            <CardHeader className="p-4 md:p-6 pb-2">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Clock className="h-5 w-5 text-primary" />
+                    {isRTL ? 'جدول اليوم' : "Today's Schedule"}
+                  </CardTitle>
+                  <CardDescription className="text-sm">
+                    {isRTL ? 'الحجوزات المجدولة لهذا اليوم' : 'Bookings scheduled for today'}
+                  </CardDescription>
+                </div>
+                <Button variant="outline" size="sm" asChild className="rounded-xl">
+                  <Link to="/provider/calendar">
+                    {isRTL ? 'عرض التقويم' : 'View Calendar'}
+                    <Arrow className="ms-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-4 md:p-6 pt-0">
+              <div className="text-center py-8 text-muted-foreground">
+                <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-4">
+                  <Calendar className="h-8 w-8 opacity-50" />
+                </div>
+                <p className="font-medium">{isRTL ? 'لا توجد حجوزات اليوم' : 'No bookings today'}</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {isRTL ? 'ستظهر الحجوزات المجدولة هنا' : 'Scheduled bookings will appear here'}
+                </p>
+              </div>
+            </CardContent>
+          </GlassCard>
 
           {/* Reviews Summary - Premium glass card */}
           <GlassCard variant="heavy" hoverable={false}>
@@ -230,15 +314,15 @@ export default function ProviderDashboard() {
               </GlassCard>
             </Link>
             
-            <Link to="/provider/calendar" className="block">
+            <Link to="/provider/availability" className="block">
               <GlassCard className="h-full group">
                 <GlassCardContent className="p-4 flex flex-col items-center text-center gap-2">
                   <div className="p-2.5 rounded-xl bg-gradient-to-br from-secondary to-secondary/80 text-white shadow-lg transition-transform group-hover:scale-110">
-                    <Calendar className="h-5 w-5" />
+                    <MapPin className="h-5 w-5" />
                   </div>
-                  <h3 className="font-semibold text-sm">{isRTL ? 'التقويم' : 'Calendar'}</h3>
+                  <h3 className="font-semibold text-sm">{isRTL ? 'التوفر' : 'Availability'}</h3>
                   <p className="text-xs text-muted-foreground hidden md:block">
-                    {isRTL ? 'عرض الحجوزات' : 'View bookings'}
+                    {isRTL ? 'إدارة أوقاتك' : 'Manage times'}
                   </p>
                 </GlassCardContent>
               </GlassCard>
@@ -260,6 +344,12 @@ export default function ProviderDashboard() {
           </div>
         </div>
       </PullToRefresh>
+
+      {/* Floating Action Button */}
+      <FloatingActionButton 
+        icon={<Plus className="h-6 w-6" />}
+        actions={fabActions}
+      />
     </DashboardLayout>
   );
 }

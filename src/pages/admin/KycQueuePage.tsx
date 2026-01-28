@@ -37,7 +37,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
-import { MainLayout } from '@/components/layout';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { useAdminProviders } from '@/hooks/useAdminProviders';
 import { useLanguage } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
@@ -111,8 +111,8 @@ export default function KycQueuePage() {
   };
 
   return (
-    <MainLayout>
-      <div className="container py-8 px-4">
+    <DashboardLayout>
+      <div className="p-4 md:p-6">
         {/* Header */}
         <div className="mb-8">
           <h1 className={`text-3xl font-bold mb-2 ${isRTL ? 'font-arabic' : ''}`}>
@@ -415,6 +415,6 @@ export default function KycQueuePage() {
           </DialogContent>
         </Dialog>
       </div>
-    </MainLayout>
+    </DashboardLayout>
   );
 }

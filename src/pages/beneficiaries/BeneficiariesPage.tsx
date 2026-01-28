@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Users, Search } from 'lucide-react';
+import { Plus, Users, Search, Heart, UserCheck, UserX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -20,15 +20,22 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { GlassCard, GlassCardContent, StatCard } from '@/components/cards';
 import { BeneficiaryForm } from '@/components/beneficiaries/BeneficiaryForm';
 import { BeneficiaryCard } from '@/components/beneficiaries/BeneficiaryCard';
+import { FloatingActionButton } from '@/components/navigation/FloatingActionButton';
+import { EmptyState } from '@/components/feedback';
+import { PullToRefresh } from '@/components/ui/pull-to-refresh';
 import { useBeneficiaries, type Beneficiary } from '@/hooks/useBeneficiaries';
 import { useLanguage } from '@/lib/i18n';
+import { useDashboardRefresh } from '@/hooks/useDashboardRefresh';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 export default function BeneficiariesPage() {
   const { t, isRTL } = useLanguage();
   const { beneficiaries, isLoading, addBeneficiary, updateBeneficiary, deleteBeneficiary } = useBeneficiaries();
+  const { refresh } = useDashboardRefresh();
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingBeneficiary, setEditingBeneficiary] = useState<Beneficiary | null>(null);
@@ -44,6 +51,10 @@ export default function BeneficiariesPage() {
       b.nationality?.toLowerCase().includes(query)
     );
   });
+
+  // Stats
+  const deceasedCount = beneficiaries.filter(b => b.status === 'deceased').length;
+  const livingCount = beneficiaries.filter(b => b.status !== 'deceased').length;
 
   const handleOpenForm = (beneficiary?: Beneficiary) => {
     setEditingBeneficiary(beneficiary || null);
@@ -83,122 +94,159 @@ export default function BeneficiariesPage() {
 
   return (
     <DashboardLayout>
-      <div className="p-4 md:p-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-          <div>
-            <h1 className={`text-3xl font-bold mb-2 ${isRTL ? 'font-arabic' : ''}`}>
-              {t.beneficiaries.title}
-            </h1>
-            <p className="text-muted-foreground">
-              {isRTL 
-                ? 'إدارة المستفيدين الذين ستُؤدى المناسك نيابةً عنهم'
-                : 'Manage people on whose behalf pilgrimages will be performed'}
-            </p>
-          </div>
-          <Button onClick={() => handleOpenForm()} className="gap-2">
-            <Plus className="h-4 w-4" />
-            {t.beneficiaries.addNew}
-          </Button>
-        </div>
-
-        {/* Search */}
-        <div className="relative mb-6">
-          <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder={isRTL ? 'البحث بالاسم أو الجنسية...' : 'Search by name or nationality...'}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="ps-10"
-          />
-        </div>
-
-        {/* Content */}
-        {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-48 bg-muted animate-pulse rounded-lg" />
-            ))}
-          </div>
-        ) : filteredBeneficiaries.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="p-4 rounded-full bg-muted mb-4">
-              <Users className="h-12 w-12 text-muted-foreground" />
+      <PullToRefresh onRefresh={refresh} className="h-full">
+        <div className="p-4 md:p-6 pb-32">
+          {/* Header */}
+          <div className="mb-6">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2.5 rounded-xl bg-gradient-to-br from-primary to-primary/80 text-white shadow-lg">
+                <Heart className="h-5 w-5" />
+              </div>
+              <div>
+                <h1 className={cn('text-2xl md:text-3xl font-bold', isRTL && 'font-arabic')}>
+                  {t.beneficiaries.title}
+                </h1>
+                <p className="text-muted-foreground text-sm">
+                  {isRTL 
+                    ? 'إدارة المستفيدين الذين ستُؤدى المناسك نيابةً عنهم'
+                    : 'Manage people on whose behalf pilgrimages will be performed'}
+                </p>
+              </div>
             </div>
-            <h3 className="font-semibold text-lg mb-1">
-              {searchQuery ? (isRTL ? 'لا توجد نتائج' : 'No results found') : t.beneficiaries.noBeneficiaries}
-            </h3>
-            <p className="text-muted-foreground mb-4">
-              {searchQuery 
+          </div>
+
+          {/* Stats Cards */}
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            <StatCard
+              title={isRTL ? 'الإجمالي' : 'Total'}
+              value={beneficiaries.length}
+              icon={Users}
+              iconBgColor="bg-primary/10"
+            />
+            <StatCard
+              title={isRTL ? 'أحياء' : 'Living'}
+              value={livingCount}
+              icon={UserCheck}
+              iconBgColor="bg-emerald-500/10"
+            />
+            <StatCard
+              title={isRTL ? 'متوفين' : 'Deceased'}
+              value={deceasedCount}
+              icon={UserX}
+              iconBgColor="bg-purple-500/10"
+            />
+          </div>
+
+          {/* Search */}
+          <GlassCard className="mb-6">
+            <GlassCardContent className="p-3">
+              <div className="relative">
+                <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder={isRTL ? 'البحث بالاسم أو الجنسية...' : 'Search by name or nationality...'}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="ps-10 border-0 bg-transparent focus-visible:ring-0"
+                />
+              </div>
+            </GlassCardContent>
+          </GlassCard>
+
+          {/* Content */}
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-48 bg-muted animate-pulse rounded-2xl" />
+              ))}
+            </div>
+          ) : filteredBeneficiaries.length === 0 ? (
+            <EmptyState
+              icon={Users}
+              title={searchQuery 
+                ? (isRTL ? 'لا توجد نتائج' : 'No results found') 
+                : t.beneficiaries.noBeneficiaries}
+              description={searchQuery 
                 ? (isRTL ? 'جرب البحث بكلمات مختلفة' : 'Try a different search term')
                 : t.beneficiaries.addFirst}
-            </p>
-            {!searchQuery && (
-              <Button onClick={() => handleOpenForm()} className="gap-2">
-                <Plus className="h-4 w-4" />
-                {t.beneficiaries.addNew}
-              </Button>
-            )}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredBeneficiaries.map((beneficiary) => (
-              <BeneficiaryCard
-                key={beneficiary.id}
-                beneficiary={beneficiary}
-                onEdit={handleOpenForm}
-                onDelete={setDeletingId}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Add/Edit Dialog */}
-        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>
-                {editingBeneficiary 
-                  ? (isRTL ? 'تعديل المستفيد' : 'Edit Beneficiary')
-                  : t.beneficiaries.addNew}
-              </DialogTitle>
-              <DialogDescription>
-                {isRTL 
-                  ? 'أدخل معلومات المستفيد الذي ستُؤدى المناسك نيابةً عنه'
-                  : 'Enter details of the person on whose behalf pilgrimage will be performed'}
-              </DialogDescription>
-            </DialogHeader>
-            <BeneficiaryForm
-              beneficiary={editingBeneficiary}
-              onSubmit={handleSubmit}
-              onCancel={handleCloseForm}
-              isSubmitting={isSubmitting}
+              action={!searchQuery ? {
+                label: t.beneficiaries.addNew,
+                onClick: () => handleOpenForm(),
+              } : undefined}
             />
-          </DialogContent>
-        </Dialog>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredBeneficiaries.map((beneficiary, index) => (
+                <div
+                  key={beneficiary.id}
+                  className="animate-fade-in-up"
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
+                  <BeneficiaryCard
+                    beneficiary={beneficiary}
+                    onEdit={handleOpenForm}
+                    onDelete={setDeletingId}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </PullToRefresh>
 
-        {/* Delete Confirmation */}
-        <AlertDialog open={!!deletingId} onOpenChange={() => setDeletingId(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>
-                {isRTL ? 'هل أنت متأكد؟' : 'Are you sure?'}
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                {isRTL 
-                  ? 'سيتم حذف هذا المستفيد نهائياً. لا يمكن التراجع عن هذا الإجراء.'
-                  : 'This beneficiary will be permanently deleted. This action cannot be undone.'}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                {t.common.delete}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
+      {/* Floating Action Button */}
+      <FloatingActionButton
+        icon={<Plus className="h-6 w-6" />}
+        onClick={() => handleOpenForm()}
+      />
+
+      {/* Add/Edit Dialog */}
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="sm:max-w-[500px] rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className={isRTL ? 'font-arabic' : ''}>
+              {editingBeneficiary 
+                ? (isRTL ? 'تعديل المستفيد' : 'Edit Beneficiary')
+                : t.beneficiaries.addNew}
+            </DialogTitle>
+            <DialogDescription>
+              {isRTL 
+                ? 'أدخل معلومات المستفيد الذي ستُؤدى المناسك نيابةً عنه'
+                : 'Enter details of the person on whose behalf pilgrimage will be performed'}
+            </DialogDescription>
+          </DialogHeader>
+          <BeneficiaryForm
+            beneficiary={editingBeneficiary}
+            onSubmit={handleSubmit}
+            onCancel={handleCloseForm}
+            isSubmitting={isSubmitting}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deletingId} onOpenChange={() => setDeletingId(null)}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className={isRTL ? 'font-arabic' : ''}>
+              {isRTL ? 'هل أنت متأكد؟' : 'Are you sure?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {isRTL 
+                ? 'سيتم حذف هذا المستفيد نهائياً. لا يمكن التراجع عن هذا الإجراء.'
+                : 'This beneficiary will be permanently deleted. This action cannot be undone.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">{t.common.cancel}</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete} 
+              className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t.common.delete}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 }
