@@ -1,23 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   Home, Calendar, Users, FileText, Star, Settings, ChevronLeft, ChevronRight,
   CreditCard, Building2, Shield, UserCheck, BarChart3, DollarSign,
-  Clock, Heart, CalendarClock, Wifi, WifiOff, MapPin, LogOut,
-  ChevronDown, Image, Sparkles
+  Clock, Heart, CalendarClock, LogOut, ChevronDown, Image
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
-import { useGeolocation } from '@/hooks/useGeolocation';
-import { useOfflineSync } from '@/hooks/useOfflineSync';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 
 interface NavItem {
   title: string;
@@ -154,8 +150,6 @@ export function EnhancedSidebar() {
   const { isRTL } = useLanguage();
   const { role, profile, signOut } = useAuth();
   const location = useLocation();
-  const { location: geoLocation, currency } = useGeolocation();
-  const { isOnline, pendingCount, isSyncing } = useOfflineSync();
   const [isExpanded, setIsExpanded] = useState(true);
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['Main', 'الرئيسية', 'Overview', 'نظرة عامة']);
 
@@ -217,21 +211,16 @@ export function EnhancedSidebar() {
         getRoleThemeClass()
       )}
     >
-      {/* Logo & Toggle */}
+      {/* Header with Toggle */}
       <div className={cn(
-        'flex items-center h-16 border-b px-3',
+        'flex items-center h-14 border-b px-3',
         isExpanded ? 'justify-between' : 'justify-center'
       )}>
-        {isExpanded && (
-          <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground shadow-sm">
-              <span className={`text-lg font-bold ${isRTL ? 'font-arabic' : ''}`}>و</span>
-            </div>
-            <span className={`text-lg font-semibold ${isRTL ? 'font-arabic' : ''}`}>
-              {isRTL ? 'وكّلني' : 'Wakilni'}
-            </span>
-          </Link>
-        )}
+        {isExpanded ? (
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            {isRTL ? 'القائمة' : 'Navigation'}
+          </span>
+        ) : null}
         <Button
           variant="ghost"
           size="icon"
@@ -241,34 +230,6 @@ export function EnhancedSidebar() {
           <ExpandIcon className="h-4 w-4" />
         </Button>
       </div>
-
-      {/* Status Bar */}
-      {isExpanded && (
-        <div className="flex items-center gap-2 px-3 py-2 border-b text-xs">
-          <div className="flex items-center gap-1.5">
-            {isOnline ? (
-              <Wifi className="h-3 w-3 text-emerald-500" />
-            ) : (
-              <WifiOff className="h-3 w-3 text-amber-500" />
-            )}
-            <span className="text-muted-foreground">
-              {isOnline ? (isRTL ? 'متصل' : 'Online') : (isRTL ? 'غير متصل' : 'Offline')}
-            </span>
-          </div>
-          {pendingCount > 0 && (
-            <Badge variant="secondary" className="text-[10px] h-4 px-1.5">
-              {pendingCount}
-            </Badge>
-          )}
-          <div className="flex-1" />
-          {geoLocation && (
-            <div className="flex items-center gap-1 text-muted-foreground">
-              <MapPin className="h-3 w-3" />
-              <span>{currency.code}</span>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Navigation */}
       <ScrollArea className="flex-1 py-2">

@@ -126,75 +126,59 @@ export function EnhancedHeader({ showNav = true }: EnhancedHeaderProps) {
           : 'bg-background/90 backdrop-blur-md'
       )}
     >
-      {/* Premium Top Bar */}
-      <div className="hidden lg:block bg-gradient-to-r from-primary/5 via-secondary/5 to-primary/5 border-b border-border/30">
-        <div className="container">
-          <div className="flex items-center justify-between py-2 px-4 text-xs">
-            <div className="flex items-center gap-6">
-              {/* Location & Currency */}
-              {geoLocation && (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-background/80 border border-border/50">
-                    <MapPin className="h-3 w-3 text-primary" />
-                    <span className="font-medium">{geoLocation.city}, {geoLocation.country_name}</span>
-                    <Separator orientation="vertical" className="h-3 mx-1" />
-                    <span className="text-primary font-semibold">({currency.code})</span>
+      {/* Premium Top Bar - Only show on landing pages, not dashboard */}
+      {showNav && (
+        <div className="hidden lg:block bg-gradient-to-r from-primary/5 via-secondary/5 to-primary/5 border-b border-border/30">
+          <div className="container">
+            <div className="flex items-center justify-between py-2 px-4 text-xs">
+              <div className="flex items-center gap-6">
+                {/* Location & Currency */}
+                {geoLocation && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-background/80 border border-border/50">
+                      <MapPin className="h-3 w-3 text-primary" />
+                      <span className="font-medium">{geoLocation.city}, {geoLocation.country_name}</span>
+                      <Separator orientation="vertical" className="h-3 mx-1" />
+                      <span className="text-primary font-semibold">({currency.code})</span>
+                    </div>
                   </div>
-                </div>
-              )}
-              
-              {/* Connection Status */}
-              <div className="flex items-center gap-2">
-                <div className={cn(
-                  'flex items-center gap-1.5 px-2.5 py-1 rounded-full border',
-                  isOnline 
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-400' 
-                    : 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-400'
-                )}>
-                  {isOnline ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
-                  <span className="font-medium">{isOnline ? (isRTL ? 'متصل' : 'Online') : (isRTL ? 'غير متصل' : 'Offline')}</span>
-                </div>
-                {pendingCount > 0 && (
-                  <Badge variant="secondary" className="text-[10px] h-5 px-2 bg-primary/10 text-primary border-0">
-                    {pendingCount} {isRTL ? 'معلق' : 'pending'}
-                  </Badge>
                 )}
               </div>
-            </div>
 
-            <div className="flex items-center gap-3">
-              {/* Install PWA Button */}
-              {isInstallable && (
+              <div className="flex items-center gap-3">
+                {/* Install PWA Button */}
+                {isInstallable && (
+                  <button
+                    onClick={promptInstall}
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
+                  >
+                    <Download className="h-3 w-3" />
+                    {isRTL ? 'تثبيت التطبيق' : 'Install App'}
+                  </button>
+                )}
+
+                {/* Theme Toggle */}
                 <button
-                  onClick={promptInstall}
-                  className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
+                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
                 >
-                  <Download className="h-3 w-3" />
-                  {isRTL ? 'تثبيت التطبيق' : 'Install App'}
+                  {theme === 'dark' ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+                  <span className="font-medium">{theme === 'dark' ? (isRTL ? 'فاتح' : 'Light') : (isRTL ? 'داكن' : 'Dark')}</span>
                 </button>
-              )}
 
-              {/* Theme Toggle */}
-              <button
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
-              >
-                {theme === 'dark' ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
-                <span className="font-medium">{theme === 'dark' ? (isRTL ? 'فاتح' : 'Light') : (isRTL ? 'داكن' : 'Dark')}</span>
-              </button>
-
-              {/* Language Toggle */}
-              <button
-                onClick={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
-              >
-                <Globe className="h-3.5 w-3.5" />
-                <span className="font-medium">{language === 'ar' ? 'English' : 'العربية'}</span>
-              </button>
+                {/* Language Toggle */}
+                <button
+                  onClick={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
+                >
+                  <Globe className="h-3.5 w-3.5" />
+                  <span className="font-medium">{language === 'ar' ? 'English' : 'العربية'}</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Main Header */}
       <div className="container">
