@@ -3,18 +3,16 @@ import { Link } from 'react-router-dom';
 import { Calendar, Clock, User, Building2, Plus, Eye, Filter } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { GlassCard, GlassCardContent } from '@/components/cards';
+import { SwipeableTabs } from '@/components/navigation/SwipeableTabs';
+import { FloatingActionButton } from '@/components/navigation/FloatingActionButton';
+import { EmptyState } from '@/components/feedback';
+import { PullToRefresh } from '@/components/ui/pull-to-refresh';
 import { useBookings, type BookingStatus } from '@/hooks/useBookings';
 import { useLanguage } from '@/lib/i18n';
+import { useDashboardRefresh } from '@/hooks/useDashboardRefresh';
 import { cn } from '@/lib/utils';
 
 const statusColors: Record<BookingStatus, string> = {
@@ -26,7 +24,7 @@ const statusColors: Record<BookingStatus, string> = {
   disputed: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
 };
 
-const serviceTypeIcons: Record<string, string> = {
+const serviceTypeEmojis: Record<string, string> = {
   umrah: '🕋',
   hajj: '🕌',
   ziyarat: '🌙',
@@ -35,6 +33,7 @@ const serviceTypeIcons: Record<string, string> = {
 export default function BookingsPage() {
   const { t, isRTL } = useLanguage();
   const { bookings, isLoading } = useBookings();
+  const { refresh } = useDashboardRefresh();
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
   const filteredBookings = bookings.filter(booking => {
@@ -59,152 +58,142 @@ export default function BookingsPage() {
     disputed: t.bookings.disputed,
   };
 
+  const tabs = [
+    { id: 'all', label: t.common.all, badge: bookings.length },
+    { id: 'pending', label: t.bookings.pending, badge: bookings.filter(b => b.status === 'pending').length },
+    { id: 'in_progress', label: isRTL ? 'جارٍ' : 'Active', badge: bookings.filter(b => b.status === 'in_progress' || b.status === 'accepted').length },
+    { id: 'completed', label: t.bookings.completed, badge: bookings.filter(b => b.status === 'completed').length },
+  ];
+
+  const handleTabChange = (tabId: string) => {
+    if (tabId === 'in_progress') {
+      setStatusFilter('in_progress');
+    } else {
+      setStatusFilter(tabId);
+    }
+  };
+
   return (
     <DashboardLayout>
-      <div className="p-4 md:p-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-          <div>
-            <h1 className={`text-3xl font-bold mb-2 ${isRTL ? 'font-arabic' : ''}`}>
+      <PullToRefresh onRefresh={refresh} className="h-full">
+        <div className="p-4 md:p-6 pb-32">
+          {/* Header */}
+          <div className="mb-6">
+            <h1 className={cn('text-2xl md:text-3xl font-bold mb-1', isRTL && 'font-arabic')}>
               {t.bookings.myBookings}
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               {isRTL 
                 ? 'تتبع وإدارة جميع حجوزاتك'
                 : 'Track and manage all your bookings'}
             </p>
           </div>
-          <Button asChild className="gap-2">
-            <Link to="/bookings/new">
-              <Plus className="h-4 w-4" />
-              {t.bookings.newBooking}
-            </Link>
-          </Button>
-        </div>
 
-        {/* Filters */}
-        <div className="flex items-center gap-4 mb-6">
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">
-              {isRTL ? 'تصفية حسب:' : 'Filter by:'}
-            </span>
-          </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t.common.all}</SelectItem>
-              <SelectItem value="pending">{t.bookings.pending}</SelectItem>
-              <SelectItem value="accepted">{t.bookings.accepted}</SelectItem>
-              <SelectItem value="in_progress">{t.bookings.inProgress}</SelectItem>
-              <SelectItem value="completed">{t.bookings.completed}</SelectItem>
-              <SelectItem value="cancelled">{t.bookings.cancelled}</SelectItem>
-              <SelectItem value="disputed">{t.bookings.disputed}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+          {/* Filter Tabs */}
+          <SwipeableTabs
+            tabs={tabs}
+            activeTab={statusFilter === 'accepted' ? 'in_progress' : statusFilter}
+            onTabChange={handleTabChange}
+            variant="pills"
+            size="sm"
+            className="mb-6"
+          />
 
-        {/* Bookings List */}
-        {isLoading ? (
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-32 bg-muted animate-pulse rounded-lg" />
-            ))}
-          </div>
-        ) : filteredBookings.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="font-semibold text-lg mb-1">{t.bookings.noBookings}</h3>
-            <p className="text-muted-foreground mb-4">{t.bookings.createFirst}</p>
-            <Button asChild>
-              <Link to="/bookings/new">
-                <Plus className="me-2 h-4 w-4" />
-                {t.bookings.newBooking}
-              </Link>
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {filteredBookings.map((booking) => (
-              <Card key={booking.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex items-start gap-4">
-                      <div className="text-4xl">
-                        {booking.service?.service_type && serviceTypeIcons[booking.service.service_type]}
-                      </div>
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold">
-                            {booking.service && (isRTL 
-                              ? booking.service.title_ar || booking.service.title 
-                              : booking.service.title)}
-                          </h3>
-                          <Badge className={cn('text-xs', statusColors[booking.status as BookingStatus])}>
-                            {statusLabels[booking.status as BookingStatus]}
-                          </Badge>
+          {/* Bookings List */}
+          {isLoading ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-32 bg-muted animate-pulse rounded-2xl" />
+              ))}
+            </div>
+          ) : filteredBookings.length === 0 ? (
+            <EmptyState
+              icon={Calendar}
+              title={t.bookings.noBookings}
+              description={t.bookings.createFirst}
+              action={{
+                label: t.bookings.newBooking,
+                onClick: () => window.location.href = '/bookings/new',
+              }}
+            />
+          ) : (
+            <div className="space-y-3">
+              {filteredBookings.map((booking, index) => (
+                <Link key={booking.id} to={`/bookings/${booking.id}`}>
+                  <GlassCard 
+                    className={cn(
+                      'animate-fade-in-up',
+                    )}
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    <GlassCardContent className="p-4">
+                      <div className="flex items-start gap-4">
+                        {/* Service Type Emoji */}
+                        <div className="text-3xl">
+                          {booking.service?.service_type && serviceTypeEmojis[booking.service.service_type]}
                         </div>
-                        
-                        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                          {booking.beneficiary && (
+
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <h3 className="font-semibold text-sm md:text-base line-clamp-1">
+                              {booking.service && (isRTL 
+                                ? booking.service.title_ar || booking.service.title 
+                                : booking.service.title)}
+                            </h3>
+                            <Badge className={cn('text-xs shrink-0', statusColors[booking.status as BookingStatus])}>
+                              {statusLabels[booking.status as BookingStatus]}
+                            </Badge>
+                          </div>
+                          
+                          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mb-3">
+                            {booking.beneficiary && (
+                              <div className="flex items-center gap-1">
+                                <User className="h-3 w-3" />
+                                <span className="truncate max-w-[100px]">
+                                  {isRTL 
+                                    ? booking.beneficiary.full_name_ar || booking.beneficiary.full_name
+                                    : booking.beneficiary.full_name}
+                                </span>
+                              </div>
+                            )}
+                            {booking.scheduled_date && (
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                <span>{format(new Date(booking.scheduled_date), 'MMM d')}</span>
+                              </div>
+                            )}
                             <div className="flex items-center gap-1">
-                              <User className="h-4 w-4" />
-                              <span>
-                                {isRTL 
-                                  ? booking.beneficiary.full_name_ar || booking.beneficiary.full_name
-                                  : booking.beneficiary.full_name}
-                              </span>
+                              <Clock className="h-3 w-3" />
+                              <span>{format(new Date(booking.created_at), 'MMM d')}</span>
                             </div>
-                          )}
-                          {booking.provider && (
-                            <div className="flex items-center gap-1">
-                              <Building2 className="h-4 w-4" />
-                              <span>
-                                {isRTL 
-                                  ? booking.provider.company_name_ar || booking.provider.company_name
-                                  : booking.provider.company_name}
-                              </span>
-                            </div>
-                          )}
-                          {booking.scheduled_date && (
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-4 w-4" />
-                              <span>{format(new Date(booking.scheduled_date), 'PP')}</span>
-                            </div>
-                          )}
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-4 w-4" />
-                            <span>{format(new Date(booking.created_at), 'PP')}</span>
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <p className="font-semibold text-primary">
+                              {formatPrice(booking.total_amount, booking.currency)}
+                            </p>
+                            <Button variant="ghost" size="sm" className="h-8 rounded-lg">
+                              <Eye className="h-4 w-4 me-1" />
+                              {t.common.view}
+                            </Button>
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </GlassCardContent>
+                  </GlassCard>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      </PullToRefresh>
 
-                    <div className="flex items-center gap-4">
-                      <div className="text-end">
-                        <p className="text-sm text-muted-foreground">
-                          {isRTL ? 'الإجمالي' : 'Total'}
-                        </p>
-                        <p className="font-semibold text-primary">
-                          {formatPrice(booking.total_amount, booking.currency)}
-                        </p>
-                      </div>
-                      <Button variant="outline" size="sm" asChild>
-                        <Link to={`/bookings/${booking.id}`}>
-                          <Eye className="me-2 h-4 w-4" />
-                          {t.common.view}
-                        </Link>
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Floating Action Button */}
+      <FloatingActionButton
+        icon={<Plus className="h-6 w-6" />}
+        onClick={() => window.location.href = '/bookings/new'}
+      />
     </DashboardLayout>
   );
 }
