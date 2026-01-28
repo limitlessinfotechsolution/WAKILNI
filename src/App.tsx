@@ -47,6 +47,8 @@ import AvailabilityPage from "./pages/provider/AvailabilityPage";
 import GalleryPage from "./pages/provider/GalleryPage";
 import ProviderProfilePage from "./pages/providers/ProviderProfilePage";
 import InstallPage from "./pages/pwa/InstallPage";
+import CertificateVerificationPage from "./pages/verify/CertificateVerificationPage";
+import ScholarVerificationPage from "./pages/admin/ScholarVerificationPage";
 
 const queryClient = new QueryClient();
 
@@ -126,7 +128,7 @@ function AppRoutes() {
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/donate" element={<DonatePage />} />
       <Route path="/install" element={<InstallPage />} />
-      <Route path="/donate" element={<DonatePage />} />
+      <Route path="/verify" element={<CertificateVerificationPage />} />
       
       {/* Dashboard Router */}
       <Route path="/dashboard" element={<ProtectedRoute><DashboardRouter /></ProtectedRoute>} />
@@ -166,6 +168,7 @@ function AppRoutes() {
       <Route path="/admin/providers" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><ProvidersManagementPage /></ProtectedRoute>} />
       <Route path="/admin/vendors" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><VendorsManagementPage /></ProtectedRoute>} />
       <Route path="/admin/kyc" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><KycQueuePage /></ProtectedRoute>} />
+      <Route path="/admin/scholar-verification" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><ScholarVerificationPage /></ProtectedRoute>} />
       <Route path="/admin/donations" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><DonationsPage /></ProtectedRoute>} />
       <Route path="/admin/allocations" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><BookingAllocationPage /></ProtectedRoute>} />
       <Route path="/admin/subscriptions" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><SubscriptionsPage /></ProtectedRoute>} />

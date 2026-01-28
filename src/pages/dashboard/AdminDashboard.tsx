@@ -68,6 +68,13 @@ export default function AdminDashboard() {
       color: 'from-orange-500 to-amber-500',
     },
     {
+      title: isRTL ? 'اعتماد المعتمرين' : 'Pilgrim Verification',
+      description: isRTL ? 'مراجعة شهادات المعتمرين' : 'Review pilgrim certifications',
+      href: '/admin/scholar-verification',
+      icon: <Shield className="h-5 w-5" />,
+      color: 'from-purple-500 to-violet-500',
+    },
+    {
       title: isRTL ? 'الاشتراكات' : 'Subscriptions',
       description: isRTL ? 'إدارة اشتراكات الوكلاء' : 'Manage subscriptions',
       href: '/admin/subscriptions',
