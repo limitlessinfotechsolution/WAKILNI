@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { cn } from '@/lib/utils';
+import wakilniLogo from '@/assets/wakilni-logo.jpg';
 
 type RoleType = 'traveler' | 'provider' | 'vendor';
 type StepType = 'role' | 'account' | 'profile' | 'complete';
@@ -203,12 +204,11 @@ export default function SignupPage() {
       <header className="flex items-center justify-between p-4 md:p-6 relative z-10">
         <Link to="/" className="flex items-center gap-3 group">
           <div className={cn(
-            'flex h-10 w-10 items-center justify-center rounded-xl',
-            'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground',
+            'flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden',
             'shadow-lg shadow-primary/30 group-hover:shadow-xl group-hover:shadow-primary/40',
             'transition-all duration-300 group-hover:scale-105'
           )}>
-            <span className={cn('text-lg font-bold', isRTL && 'font-arabic')}>و</span>
+            <img src={wakilniLogo} alt="Wakilni" className="h-full w-full object-cover" />
           </div>
           <span className={cn(
             'text-xl font-semibold gradient-text-sacred',

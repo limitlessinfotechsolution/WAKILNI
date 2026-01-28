@@ -32,6 +32,7 @@ import { useOfflineSync } from '@/hooks/useOfflineSync';
 import { usePWA } from '@/hooks/usePWA';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { cn } from '@/lib/utils';
+import wakilniLogo from '@/assets/wakilni-logo.jpg';
 
 interface EnhancedHeaderProps {
   showNav?: boolean;
@@ -186,8 +187,8 @@ export function EnhancedHeader({ showNav = true }: EnhancedHeaderProps) {
           {/* Logo - Compact on mobile */}
           <Link to="/" className="flex items-center gap-2 md:gap-3 group">
             <div className="relative">
-              <div className="flex h-9 w-9 md:h-11 md:w-11 items-center justify-center rounded-lg md:rounded-xl bg-gradient-to-br from-primary via-primary to-emerald-600 text-primary-foreground shadow-lg shadow-primary/25 group-hover:shadow-xl group-hover:shadow-primary/30 transition-all duration-300">
-                <span className={`text-lg md:text-xl font-bold ${isRTL ? 'font-arabic' : ''}`}>و</span>
+              <div className="flex h-9 w-9 md:h-11 md:w-11 items-center justify-center rounded-lg md:rounded-xl overflow-hidden shadow-lg shadow-primary/25 group-hover:shadow-xl group-hover:shadow-primary/30 transition-all duration-300">
+                <img src={wakilniLogo} alt="Wakilni" className="h-full w-full object-cover" />
               </div>
               <div className="absolute -inset-1 rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10 blur-sm" />
             </div>
