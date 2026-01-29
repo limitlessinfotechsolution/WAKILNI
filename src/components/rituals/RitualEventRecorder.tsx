@@ -1,18 +1,22 @@
 import { useState } from 'react';
 import { 
-  CheckCircle, Circle, Camera, Mic, MapPin, Loader2, 
-  Upload, Play, AlertCircle, Clock, ChevronDown, ChevronUp
+  CheckCircle, Camera, MapPin, Loader2, 
+  Maximize2, Minimize2, WifiOff, CloudOff
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useLanguage } from '@/lib/i18n';
 import { useRitualEvents, UMRAH_RITUAL_STEPS } from '@/hooks/useRitualEvents';
 import { useRitualLocation } from '@/hooks/useRitualLocation';
+import { useHaptics } from '@/hooks/useHaptics';
+import { useOfflineSync } from '@/hooks/useOfflineSync';
+import { GPSIndicator } from './GPSIndicator';
+import { StepProgressBar } from './StepProgressBar';
+import { AudioWaveform } from './AudioWaveform';
+import { SuccessCelebration } from '@/components/feedback/SuccessCelebration';
+import { GlassCard, GlassCardContent, GlassCardHeader } from '@/components/cards/GlassCard';
 import { cn } from '@/lib/utils';
 
 interface RitualEventRecorderProps {
@@ -31,36 +35,39 @@ export function RitualEventRecorder({
   onComplete
 }: RitualEventRecorderProps) {
   const { isRTL } = useLanguage();
+  const haptics = useHaptics();
+  const { isOnline, pendingCount } = useOfflineSync();
   const { events, recordEvent, getCompletedSteps, getNextStep, isRitualComplete } = useRitualEvents(bookingId);
-  const { location, isLoading: geoLoading, error: geoError, requestLocation } = useRitualLocation();
+  const { location, isLoading: geoLoading, error: geoError, requestLocation, isNearHaram } = useRitualLocation();
   
   const [isRecording, setIsRecording] = useState(false);
-  const [selectedStep, setSelectedStep] = useState<string | null>(null);
   const [duaTranscript, setDuaTranscript] = useState('');
-  const [expandedStep, setExpandedStep] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [isAudioRecording, setIsAudioRecording] = useState(false);
+  const [audioDuration, setAudioDuration] = useState(0);
 
   const completedSteps = getCompletedSteps();
-  const nextStep = getNextStep();
-  const progress = (completedSteps.length / UMRAH_RITUAL_STEPS.length) * 100;
+  const currentStep = getNextStep();
 
-  const handleRecordStep = async (step: typeof UMRAH_RITUAL_STEPS[0]) => {
+  const handleRecordStep = async () => {
+    if (!currentStep) return;
+    
     setIsRecording(true);
-    setSelectedStep(step.step);
+    haptics.medium();
 
     try {
-      // Get current location
       let geoLocation = location;
       if (!geoLocation) {
-        await requestLocation();
-        geoLocation = location;
+        geoLocation = await requestLocation();
       }
 
       await recordEvent({
         booking_id: bookingId,
         provider_id: providerId,
         beneficiary_id: beneficiaryId,
-        ritual_step: step.step,
-        step_order: step.order,
+        ritual_step: currentStep.step,
+        step_order: currentStep.order,
         geo_location: geoLocation ? {
           lat: geoLocation.latitude,
           lng: geoLocation.longitude,
@@ -70,219 +77,241 @@ export function RitualEventRecorder({
         beneficiary_name_mentioned: duaTranscript.toLowerCase().includes(beneficiaryName.toLowerCase()),
       });
 
+      haptics.success();
       setDuaTranscript('');
       
-      if (isRitualComplete() && onComplete) {
-        onComplete();
+      // Check if ritual is now complete
+      if (completedSteps.length + 1 >= UMRAH_RITUAL_STEPS.length) {
+        setShowCelebration(true);
+        setTimeout(() => {
+          setShowCelebration(false);
+          onComplete?.();
+        }, 4000);
       }
     } finally {
       setIsRecording(false);
-      setSelectedStep(null);
     }
   };
 
-  const getStepStatus = (step: string) => {
-    if (completedSteps.includes(step)) return 'completed';
-    if (nextStep?.step === step) return 'current';
-    return 'pending';
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+    haptics.light();
   };
 
   return (
-    <div className="space-y-6">
-      {/* Progress Header */}
-      <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
-        <CardContent className="py-6">
-          <div className="flex items-center justify-between mb-4">
+    <>
+      <SuccessCelebration
+        isOpen={showCelebration}
+        onClose={() => setShowCelebration(false)}
+        title={isRTL ? 'تمت العمرة بنجاح!' : 'Umrah Complete!'}
+        description={isRTL 
+          ? `تم إكمال جميع مناسك العمرة لـ ${beneficiaryName}` 
+          : `All Umrah rituals completed for ${beneficiaryName}`
+        }
+        icon="party"
+        primaryAction={{
+          label: isRTL ? 'متابعة' : 'Continue',
+          onClick: () => {
+            setShowCelebration(false);
+            onComplete?.();
+          }
+        }}
+      />
+
+      <div className={cn(
+        'transition-all duration-300',
+        isFullscreen && 'fixed inset-0 z-50 bg-background p-4 overflow-auto'
+      )}>
+        <div className="space-y-4">
+          {/* Header with Fullscreen Toggle */}
+          <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-semibold text-lg">
+              <h3 className={cn('font-semibold text-lg', isRTL && 'font-arabic')}>
                 {isRTL ? 'سجل المناسك' : 'Ritual Event Ledger'}
               </h3>
               <p className="text-sm text-muted-foreground">
                 {isRTL ? `للمستفيد: ${beneficiaryName}` : `For: ${beneficiaryName}`}
               </p>
             </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-primary">{completedSteps.length}/{UMRAH_RITUAL_STEPS.length}</div>
-              <div className="text-xs text-muted-foreground">{isRTL ? 'خطوات مكتملة' : 'Steps Complete'}</div>
+            <div className="flex items-center gap-2">
+              {/* Offline Indicator */}
+              {!isOnline && (
+                <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                  <CloudOff className="h-3 w-3 me-1" />
+                  {pendingCount > 0 && `${pendingCount} `}
+                  {isRTL ? 'غير متصل' : 'Offline'}
+                </Badge>
+              )}
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={toggleFullscreen}
+              >
+                {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+              </Button>
             </div>
           </div>
-          <Progress value={progress} className="h-3" />
-          
+
+          {/* GPS Indicator */}
+          <GPSIndicator
+            accuracy={location?.accuracy || null}
+            isLoading={geoLoading}
+            hasLocation={!!location}
+            isNearHaram={isNearHaram()}
+            error={geoError}
+            onRequestLocation={requestLocation}
+          />
+
+          {/* Step Progress */}
+          <GlassCard variant="gradient" hoverable={false}>
+            <GlassCardContent className="py-4">
+              <StepProgressBar
+                steps={UMRAH_RITUAL_STEPS}
+                completedSteps={completedSteps}
+                currentStep={currentStep}
+              />
+            </GlassCardContent>
+          </GlassCard>
+
+          {/* Completion Alert */}
           {isRitualComplete() && (
-            <Alert className="mt-4 bg-emerald-50 border-emerald-200">
+            <Alert className="bg-emerald-50 border-emerald-200 dark:bg-emerald-950/50 dark:border-emerald-800">
               <CheckCircle className="h-4 w-4 text-emerald-600" />
-              <AlertDescription className="text-emerald-700">
+              <AlertDescription className="text-emerald-700 dark:text-emerald-300">
                 {isRTL 
                   ? 'تم إكمال جميع مناسك العمرة بنجاح! يمكنك الآن إصدار شهادة الإكمال.'
                   : 'All Umrah rituals completed successfully! You can now issue the completion certificate.'}
               </AlertDescription>
             </Alert>
           )}
-        </CardContent>
-      </Card>
 
-      {/* Location Status */}
-      {geoError && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            {isRTL 
-              ? 'يرجى تفعيل خدمة الموقع للتحقق من موقعك في الحرم'
-              : 'Please enable location services to verify your presence at the Haram'}
-          </AlertDescription>
-        </Alert>
-      )}
+          {/* Current Step Recording */}
+          {currentStep && (
+            <GlassCard variant="heavy" glow>
+              <GlassCardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Badge className="bg-primary text-primary-foreground mb-2">
+                      {isRTL ? `الخطوة ${currentStep.order}` : `Step ${currentStep.order}`}
+                    </Badge>
+                    <h4 className={cn('font-semibold text-lg', isRTL && 'font-arabic')}>
+                      {isRTL ? currentStep.labelAr : currentStep.labelEn}
+                    </h4>
+                  </div>
+                  {location && (
+                    <Badge variant="outline" className="text-emerald-600">
+                      <MapPin className="h-3 w-3 me-1" />
+                      {isRTL ? 'موقع محدد' : 'Located'}
+                    </Badge>
+                  )}
+                </div>
+              </GlassCardHeader>
+              <GlassCardContent className="space-y-4">
+                {/* Photo/Video Capture Area Placeholder */}
+                <div className="aspect-video rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/30 flex flex-col items-center justify-center gap-3">
+                  <div className="p-4 rounded-full bg-muted">
+                    <Camera className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm text-muted-foreground text-center">
+                    {isRTL ? 'اضغط لالتقاط صورة أو فيديو' : 'Tap to capture photo or video'}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" disabled>
+                      <Camera className="h-4 w-4 me-1" />
+                      {isRTL ? 'صورة' : 'Photo'}
+                    </Button>
+                  </div>
+                </div>
 
-      {/* Ritual Steps */}
-      <div className="space-y-3">
-        {UMRAH_RITUAL_STEPS.map((step) => {
-          const status = getStepStatus(step.step);
-          const isExpanded = expandedStep === step.step;
-          const completedEvent = events.find(e => e.ritual_step === step.step);
+                {/* Audio Recording */}
+                <AudioWaveform
+                  isRecording={isAudioRecording}
+                  duration={audioDuration}
+                  onStartRecording={() => {
+                    setIsAudioRecording(true);
+                    haptics.medium();
+                  }}
+                  onStopRecording={() => {
+                    setIsAudioRecording(false);
+                    haptics.success();
+                  }}
+                />
 
-          return (
-            <Card 
-              key={step.step}
-              className={cn(
-                'transition-all',
-                status === 'completed' && 'border-emerald-200 bg-emerald-50/50',
-                status === 'current' && 'border-primary ring-2 ring-primary/20',
-                status === 'pending' && 'opacity-60'
-              )}
-            >
-              <Collapsible open={isExpanded} onOpenChange={() => setExpandedStep(isExpanded ? null : step.step)}>
-                <CollapsibleTrigger asChild>
-                  <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-4">
-                    <div className="flex items-center gap-4">
-                      <div className={cn(
-                        'w-10 h-10 rounded-full flex items-center justify-center',
-                        status === 'completed' && 'bg-emerald-100',
-                        status === 'current' && 'bg-primary/10',
-                        status === 'pending' && 'bg-muted'
-                      )}>
-                        {status === 'completed' ? (
-                          <CheckCircle className="h-5 w-5 text-emerald-600" />
-                        ) : (
-                          <span className={cn(
-                            'font-bold',
-                            status === 'current' ? 'text-primary' : 'text-muted-foreground'
-                          )}>
-                            {step.order}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <CardTitle className="text-base">
+                {/* Dua Transcript */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">
+                    {isRTL ? 'نص الدعاء' : 'Dua Transcript'}
+                  </label>
+                  <Textarea
+                    placeholder={isRTL 
+                      ? `أدخل الدعاء الذي قرأته لـ ${beneficiaryName}...`
+                      : `Enter the dua you recited for ${beneficiaryName}...`}
+                    value={duaTranscript}
+                    onChange={(e) => setDuaTranscript(e.target.value)}
+                    className="min-h-[100px] font-arabic"
+                    dir="rtl"
+                  />
+                  {duaTranscript.toLowerCase().includes(beneficiaryName.toLowerCase()) && (
+                    <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">
+                      <CheckCircle className="h-3 w-3 me-1" />
+                      {isRTL ? 'ذكر اسم المستفيد' : 'Beneficiary Name Mentioned'}
+                    </Badge>
+                  )}
+                </div>
+
+                {/* Record Button */}
+                <Button 
+                  size="lg"
+                  onClick={handleRecordStep}
+                  disabled={isRecording || geoLoading}
+                  className="w-full h-14 text-lg bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all active:scale-[0.98]"
+                >
+                  {isRecording ? (
+                    <>
+                      <Loader2 className="h-5 w-5 me-2 animate-spin" />
+                      {isRTL ? 'جاري التسجيل...' : 'Recording...'}
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="h-5 w-5 me-2" />
+                      {isRTL ? 'تسجيل هذه الخطوة' : 'Record This Step'}
+                    </>
+                  )}
+                </Button>
+              </GlassCardContent>
+            </GlassCard>
+          )}
+
+          {/* Completed Steps Summary */}
+          {completedSteps.length > 0 && (
+            <GlassCard>
+              <GlassCardHeader>
+                <h4 className="font-medium text-sm text-muted-foreground">
+                  {isRTL ? 'الخطوات المكتملة' : 'Completed Steps'}
+                </h4>
+              </GlassCardHeader>
+              <GlassCardContent>
+                <div className="grid grid-cols-3 gap-2">
+                  {UMRAH_RITUAL_STEPS
+                    .filter(s => completedSteps.includes(s.step))
+                    .map(step => (
+                      <div 
+                        key={step.step}
+                        className="flex items-center gap-2 p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/30"
+                      >
+                        <CheckCircle className="h-4 w-4 text-emerald-600 shrink-0" />
+                        <span className="text-xs text-emerald-700 dark:text-emerald-300 truncate">
                           {isRTL ? step.labelAr : step.labelEn}
-                        </CardTitle>
-                        {completedEvent && (
-                          <CardDescription className="flex items-center gap-2 mt-1">
-                            <Clock className="h-3 w-3" />
-                            {new Date(completedEvent.timestamp).toLocaleString()}
-                            {completedEvent.geo_location && (
-                              <Badge variant="secondary" className="text-xs">
-                                <MapPin className="h-3 w-3 me-1" />
-                                {isRTL ? 'موثق' : 'Verified'}
-                              </Badge>
-                            )}
-                          </CardDescription>
-                        )}
+                        </span>
                       </div>
-                      {status === 'current' && (
-                        <Badge className="bg-primary text-primary-foreground">
-                          {isRTL ? 'التالي' : 'Next'}
-                        </Badge>
-                      )}
-                      {isExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-                    </div>
-                  </CardHeader>
-                </CollapsibleTrigger>
-
-                <CollapsibleContent>
-                  <CardContent className="pt-0 pb-4">
-                    {status === 'completed' && completedEvent ? (
-                      <div className="space-y-3 text-sm">
-                        <div className="grid grid-cols-2 gap-4">
-                          {completedEvent.geo_location && (
-                            <div className="flex items-center gap-2">
-                              <MapPin className="h-4 w-4 text-muted-foreground" />
-                              <span>
-                                {completedEvent.geo_location.lat.toFixed(4)}, {completedEvent.geo_location.lng.toFixed(4)}
-                              </span>
-                            </div>
-                          )}
-                          {completedEvent.beneficiary_name_mentioned && (
-                            <Badge variant="outline" className="w-fit">
-                              {isRTL ? 'ذكر اسم المستفيد' : 'Name Mentioned'}
-                            </Badge>
-                          )}
-                        </div>
-                        {completedEvent.dua_transcript && (
-                          <div className="p-3 bg-muted rounded-lg">
-                            <p className="text-sm font-arabic">{completedEvent.dua_transcript}</p>
-                          </div>
-                        )}
-                      </div>
-                    ) : status === 'current' ? (
-                      <div className="space-y-4">
-                        <Textarea
-                          placeholder={isRTL 
-                            ? `أدخل الدعاء الذي قرأته لـ ${beneficiaryName}...`
-                            : `Enter the dua you recited for ${beneficiaryName}...`}
-                          value={duaTranscript}
-                          onChange={(e) => setDuaTranscript(e.target.value)}
-                          className="min-h-[100px] font-arabic"
-                          dir="rtl"
-                        />
-                        
-                        <div className="flex flex-wrap gap-2">
-                          <Button 
-                            onClick={() => handleRecordStep(step)}
-                            disabled={isRecording}
-                            className="flex-1"
-                          >
-                            {isRecording && selectedStep === step.step ? (
-                              <>
-                                <Loader2 className="h-4 w-4 me-2 animate-spin" />
-                                {isRTL ? 'جاري التسجيل...' : 'Recording...'}
-                              </>
-                            ) : (
-                              <>
-                                <CheckCircle className="h-4 w-4 me-2" />
-                                {isRTL ? 'تسجيل هذه الخطوة' : 'Record This Step'}
-                              </>
-                            )}
-                          </Button>
-                        </div>
-
-                        {!location && (
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={requestLocation}
-                            disabled={geoLoading}
-                          >
-                            <MapPin className="h-4 w-4 me-2" />
-                            {geoLoading 
-                              ? (isRTL ? 'جاري تحديد الموقع...' : 'Getting location...') 
-                              : (isRTL ? 'تفعيل الموقع' : 'Enable Location')}
-                          </Button>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        {isRTL 
-                          ? 'أكمل الخطوات السابقة أولاً'
-                          : 'Complete previous steps first'}
-                      </p>
-                    )}
-                  </CardContent>
-                </CollapsibleContent>
-              </Collapsible>
-            </Card>
-          );
-        })}
+                    ))
+                  }
+                </div>
+              </GlassCardContent>
+            </GlassCard>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

@@ -2,18 +2,21 @@ import { useState, useMemo } from 'react';
 import { 
   FileText, User, Clock, Filter, Search, RefreshCw, Shield, 
   UserPlus, UserMinus, CheckCircle, XCircle, CreditCard,
-  Building2, UserCheck, AlertTriangle, Activity, Download
+  Building2, UserCheck, AlertTriangle, Activity, Download,
+  List, LayoutList, ChevronDown
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { useLanguage } from '@/lib/i18n';
 import { useAuditLogs } from '@/hooks/useAuditLogs';
 import { useAuth } from '@/lib/auth';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard, GlassCardContent, GlassCardHeader } from '@/components/cards/GlassCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
   TableBody,
@@ -41,9 +44,17 @@ import {
   AlertDescription,
   AlertTitle,
 } from '@/components/ui/alert';
-import { format } from 'date-fns';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import { format, isToday, isThisWeek, subDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { StatCard } from '@/components/cards/StatCard';
+
+type ViewMode = 'table' | 'timeline';
 
 export default function AuditLogsPage() {
   const { isRTL } = useLanguage();
@@ -52,6 +63,8 @@ export default function AuditLogsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLog, setSelectedLog] = useState<any | null>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('table');
+  const [quickFilter, setQuickFilter] = useState<string>('all');
 
   const { logs, isLoading, refetch } = useAuditLogs({
     entityType: entityTypeFilter === 'all' ? undefined : entityTypeFilter,
@@ -59,14 +72,33 @@ export default function AuditLogsPage() {
   });
 
   const filteredLogs = useMemo(() => {
-    return logs.filter(log => {
-      if (!searchQuery) return true;
-      const action = log.action.toLowerCase();
-      const entityType = log.entity_type.toLowerCase();
-      return action.includes(searchQuery.toLowerCase()) || 
-             entityType.includes(searchQuery.toLowerCase());
-    });
-  }, [logs, searchQuery]);
+    let result = [...logs];
+
+    // Quick filter
+    if (quickFilter === 'today') {
+      result = result.filter(log => isToday(new Date(log.created_at)));
+    } else if (quickFilter === 'week') {
+      result = result.filter(log => isThisWeek(new Date(log.created_at)));
+    } else if (quickFilter === 'critical') {
+      result = result.filter(log => 
+        log.action.includes('deleted') || 
+        log.action.includes('suspended') || 
+        log.action.includes('rejected')
+      );
+    }
+
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(log => {
+        const action = log.action.toLowerCase();
+        const entityType = log.entity_type.toLowerCase();
+        return action.includes(query) || entityType.includes(query);
+      });
+    }
+
+    return result;
+  }, [logs, searchQuery, quickFilter]);
 
   // Stats
   const stats = useMemo(() => {
@@ -162,6 +194,124 @@ export default function AuditLogsPage() {
     setDetailsDialogOpen(true);
   };
 
+  const exportLogs = () => {
+    const csvContent = [
+      ['Timestamp', 'Actor Role', 'Action', 'Entity Type', 'Entity ID'].join(','),
+      ...filteredLogs.map(log => [
+        format(new Date(log.created_at), 'yyyy-MM-dd HH:mm:ss'),
+        log.actor_role || 'Unknown',
+        log.action,
+        log.entity_type,
+        log.entity_id || ''
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `audit-logs-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+  };
+
+  // JSON Diff Viewer Component
+  const JsonDiffViewer = ({ oldValues, newValues }: { oldValues: any; newValues: any }) => {
+    if (!oldValues && !newValues) return null;
+
+    const allKeys = new Set([
+      ...Object.keys(oldValues || {}),
+      ...Object.keys(newValues || {})
+    ]);
+
+    return (
+      <div className="space-y-2 text-sm font-mono">
+        {Array.from(allKeys).map(key => {
+          const oldVal = oldValues?.[key];
+          const newVal = newValues?.[key];
+          const hasChanged = JSON.stringify(oldVal) !== JSON.stringify(newVal);
+
+          return (
+            <div key={key} className={cn(
+              'p-2 rounded',
+              hasChanged ? 'bg-amber-50 dark:bg-amber-950/30' : 'bg-muted/50'
+            )}>
+              <span className="font-medium text-muted-foreground">{key}:</span>
+              {hasChanged ? (
+                <div className="mt-1 grid grid-cols-2 gap-2">
+                  <div className="bg-red-100 dark:bg-red-900/30 p-1 rounded text-red-700 dark:text-red-300 text-xs">
+                    - {JSON.stringify(oldVal) || 'null'}
+                  </div>
+                  <div className="bg-emerald-100 dark:bg-emerald-900/30 p-1 rounded text-emerald-700 dark:text-emerald-300 text-xs">
+                    + {JSON.stringify(newVal) || 'null'}
+                  </div>
+                </div>
+              ) : (
+                <span className="ms-2 text-muted-foreground">{JSON.stringify(oldVal)}</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // Timeline View Component
+  const TimelineView = () => (
+    <div className="space-y-4">
+      {filteredLogs.map((log, index) => {
+        const isNew = index < 3;
+        return (
+          <div key={log.id} className="relative ps-8">
+            {/* Timeline Line */}
+            {index < filteredLogs.length - 1 && (
+              <div className="absolute start-3 top-6 bottom-0 w-0.5 bg-border" />
+            )}
+            
+            {/* Timeline Dot */}
+            <div className={cn(
+              'absolute start-0 top-1.5 w-6 h-6 rounded-full flex items-center justify-center',
+              log.action.includes('created') || log.action.includes('approved') 
+                ? 'bg-emerald-100 dark:bg-emerald-900/50'
+                : log.action.includes('deleted') || log.action.includes('rejected')
+                  ? 'bg-red-100 dark:bg-red-900/50'
+                  : 'bg-blue-100 dark:bg-blue-900/50',
+              isNew && 'animate-[live-pulse_2s_ease-in-out_infinite]'
+            )}>
+              {getActionIcon(log.action)}
+            </div>
+
+            {/* Content */}
+            <GlassCard 
+              hoverable 
+              className="cursor-pointer"
+              onClick={() => openDetails(log)}
+            >
+              <GlassCardContent className="py-3">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {getActionBadge(log.action)}
+                      {getRoleBadge(log.actor_role)}
+                    </div>
+                    <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+                      <Badge variant="outline" className="gap-1 text-xs">
+                        {getEntityIcon(log.entity_type)}
+                        {log.entity_type}
+                      </Badge>
+                      <span>•</span>
+                      <Clock className="h-3 w-3" />
+                      {format(new Date(log.created_at), 'MMM d, HH:mm', { locale: isRTL ? ar : undefined })}
+                    </div>
+                  </div>
+                </div>
+              </GlassCardContent>
+            </GlassCard>
+          </div>
+        );
+      })}
+    </div>
+  );
+
   if (!isSuperAdmin) {
     return (
       <DashboardLayout>
@@ -202,8 +352,12 @@ export default function AuditLogsPage() {
             </p>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" onClick={exportLogs}>
+              <Download className="h-4 w-4 me-2" />
+              {isRTL ? 'تصدير' : 'Export'}
+            </Button>
             <Button variant="outline" onClick={refetch}>
-              <RefreshCw className="h-4 w-4 mr-2" />
+              <RefreshCw className="h-4 w-4 me-2" />
               {isRTL ? 'تحديث' : 'Refresh'}
             </Button>
           </div>
@@ -211,74 +365,52 @@ export default function AuditLogsPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-blue-200">
-            <CardContent className="pt-4 pb-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                    {isRTL ? 'اليوم' : 'Today'}
-                  </p>
-                  <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">{stats.todayLogs}</p>
-                </div>
-                <div className="p-2 rounded-full bg-blue-200 dark:bg-blue-800">
-                  <Activity className="h-5 w-5 text-blue-600 dark:text-blue-300" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard
+            title={isRTL ? 'اليوم' : 'Today'}
+            value={stats.todayLogs}
+            icon={Activity}
+            trend={{ value: 12, isPositive: true }}
+          />
+          <StatCard
+            title={isRTL ? 'المستخدمين' : 'User Actions'}
+            value={stats.userActions}
+            icon={User}
+          />
+          <StatCard
+            title={isRTL ? 'التحقق' : 'KYC Reviews'}
+            value={stats.kycActions}
+            icon={CheckCircle}
+            trend={{ value: 5, isPositive: true }}
+          />
+          <StatCard
+            title={isRTL ? 'الاشتراكات' : 'Subscriptions'}
+            value={stats.subscriptionActions}
+            icon={CreditCard}
+          />
+        </div>
 
-          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 border-purple-200">
-            <CardContent className="pt-4 pb-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                    {isRTL ? 'المستخدمين' : 'User Actions'}
-                  </p>
-                  <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">{stats.userActions}</p>
-                </div>
-                <div className="p-2 rounded-full bg-purple-200 dark:bg-purple-800">
-                  <User className="h-5 w-5 text-purple-600 dark:text-purple-300" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 border-green-200">
-            <CardContent className="pt-4 pb-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                    {isRTL ? 'التحقق' : 'KYC Reviews'}
-                  </p>
-                  <p className="text-2xl font-bold text-green-700 dark:text-green-300">{stats.kycActions}</p>
-                </div>
-                <div className="p-2 rounded-full bg-green-200 dark:bg-green-800">
-                  <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-300" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950 dark:to-amber-900 border-amber-200">
-            <CardContent className="pt-4 pb-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                    {isRTL ? 'الاشتراكات' : 'Subscriptions'}
-                  </p>
-                  <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">{stats.subscriptionActions}</p>
-                </div>
-                <div className="p-2 rounded-full bg-amber-200 dark:bg-amber-800">
-                  <CreditCard className="h-5 w-5 text-amber-600 dark:text-amber-300" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Quick Filters */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          {[
+            { value: 'all', labelEn: 'All Logs', labelAr: 'جميع السجلات' },
+            { value: 'today', labelEn: 'Today', labelAr: 'اليوم' },
+            { value: 'week', labelEn: 'This Week', labelAr: 'هذا الأسبوع' },
+            { value: 'critical', labelEn: 'Critical', labelAr: 'حرجة' },
+          ].map(filter => (
+            <Button
+              key={filter.value}
+              variant={quickFilter === filter.value ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setQuickFilter(filter.value)}
+            >
+              {isRTL ? filter.labelAr : filter.labelEn}
+            </Button>
+          ))}
         </div>
 
         {/* Filters */}
-        <Card className="mb-6">
-          <CardContent className="pt-6">
+        <GlassCard className="mb-6">
+          <GlassCardContent className="py-4">
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -304,22 +436,42 @@ export default function AuditLogsPage() {
                   <SelectItem value="system">{isRTL ? 'النظام' : 'System'}</SelectItem>
                 </SelectContent>
               </Select>
+              
+              {/* View Mode Toggle */}
+              <div className="flex items-center border rounded-lg p-1">
+                <Button
+                  variant={viewMode === 'table' ? 'secondary' : 'ghost'}
+                  size="icon"
+                  onClick={() => setViewMode('table')}
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'timeline' ? 'secondary' : 'ghost'}
+                  size="icon"
+                  onClick={() => setViewMode('timeline')}
+                >
+                  <LayoutList className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          </GlassCardContent>
+        </GlassCard>
 
-        {/* Logs Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5 text-primary" />
-              {isRTL ? 'سجلات النشاط' : 'Activity Logs'}
-            </CardTitle>
-            <CardDescription>
-              {isRTL ? `إجمالي: ${filteredLogs.length} سجل` : `Total: ${filteredLogs.length} logs`}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+        {/* Logs Content */}
+        <GlassCard>
+          <GlassCardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Activity className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold">{isRTL ? 'سجلات النشاط' : 'Activity Logs'}</h3>
+              </div>
+              <Badge variant="secondary">
+                {filteredLogs.length} {isRTL ? 'سجل' : 'logs'}
+              </Badge>
+            </div>
+          </GlassCardHeader>
+          <GlassCardContent>
             {isLoading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="flex flex-col items-center gap-3">
@@ -337,10 +489,9 @@ export default function AuditLogsPage() {
                 <p className="text-muted-foreground font-medium">
                   {isRTL ? 'لا توجد سجلات' : 'No logs found'}
                 </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {isRTL ? 'ستظهر السجلات عند إجراء عمليات إدارية' : 'Logs will appear when administrative actions are performed'}
-                </p>
               </div>
+            ) : viewMode === 'timeline' ? (
+              <TimelineView />
             ) : (
               <ScrollArea className="h-[500px]">
                 <Table>
@@ -389,12 +540,12 @@ export default function AuditLogsPage() {
                 </Table>
               </ScrollArea>
             )}
-          </CardContent>
-        </Card>
+          </GlassCardContent>
+        </GlassCard>
 
         {/* Details Dialog */}
         <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5 text-primary" />
@@ -407,71 +558,71 @@ export default function AuditLogsPage() {
             {selectedLog && (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="p-3 bg-muted rounded-lg">
-                    <p className="text-xs font-medium text-muted-foreground mb-1">
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground uppercase">
                       {isRTL ? 'الإجراء' : 'Action'}
-                    </p>
+                    </label>
                     {getActionBadge(selectedLog.action)}
                   </div>
-                  <div className="p-3 bg-muted rounded-lg">
-                    <p className="text-xs font-medium text-muted-foreground mb-1">
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground uppercase">
+                      {isRTL ? 'المنفذ' : 'Actor'}
+                    </label>
+                    {getRoleBadge(selectedLog.actor_role)}
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground uppercase">
                       {isRTL ? 'نوع الكيان' : 'Entity Type'}
-                    </p>
+                    </label>
                     <Badge variant="outline" className="gap-1">
                       {getEntityIcon(selectedLog.entity_type)}
                       {selectedLog.entity_type}
                     </Badge>
                   </div>
-                  <div className="p-3 bg-muted rounded-lg">
-                    <p className="text-xs font-medium text-muted-foreground mb-1">
-                      {isRTL ? 'معرف الكيان' : 'Entity ID'}
-                    </p>
-                    <code className="text-xs bg-background px-2 py-1 rounded">
-                      {selectedLog.entity_id || 'N/A'}
-                    </code>
-                  </div>
-                  <div className="p-3 bg-muted rounded-lg">
-                    <p className="text-xs font-medium text-muted-foreground mb-1">
-                      {isRTL ? 'دور المنفذ' : 'Actor Role'}
-                    </p>
-                    {getRoleBadge(selectedLog.actor_role)}
-                  </div>
+                  {selectedLog.entity_id && (
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground uppercase">
+                        {isRTL ? 'معرف الكيان' : 'Entity ID'}
+                      </label>
+                      <p className="text-xs font-mono break-all">{selectedLog.entity_id}</p>
+                    </div>
+                  )}
                 </div>
-                
-                {selectedLog.old_values && Object.keys(selectedLog.old_values).length > 0 && (
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
-                      <XCircle className="h-4 w-4 text-red-500" />
-                      {isRTL ? 'القيم السابقة' : 'Previous Values'}
-                    </p>
-                    <pre className="text-xs bg-red-50 dark:bg-red-950/30 text-red-800 dark:text-red-200 p-3 rounded-lg overflow-auto max-h-32">
-                      {JSON.stringify(selectedLog.old_values, null, 2)}
-                    </pre>
-                  </div>
+
+                <Separator />
+
+                {/* JSON Diff Viewer */}
+                {(selectedLog.old_values || selectedLog.new_values) && (
+                  <Collapsible>
+                    <CollapsibleTrigger asChild>
+                      <Button variant="outline" className="w-full justify-between">
+                        {isRTL ? 'عرض التغييرات' : 'View Changes'}
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="mt-4">
+                      <JsonDiffViewer 
+                        oldValues={selectedLog.old_values} 
+                        newValues={selectedLog.new_values} 
+                      />
+                    </CollapsibleContent>
+                  </Collapsible>
                 )}
-                
-                {selectedLog.new_values && Object.keys(selectedLog.new_values).length > 0 && (
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-emerald-500" />
-                      {isRTL ? 'القيم الجديدة' : 'New Values'}
-                    </p>
-                    <pre className="text-xs bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-200 p-3 rounded-lg overflow-auto max-h-32">
-                      {JSON.stringify(selectedLog.new_values, null, 2)}
-                    </pre>
-                  </div>
-                )}
-                
-                {selectedLog.metadata && Object.keys(selectedLog.metadata).length > 0 && (
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
-                      <FileText className="h-4 w-4" />
-                      {isRTL ? 'بيانات إضافية' : 'Metadata'}
-                    </p>
-                    <pre className="text-xs bg-muted p-3 rounded-lg overflow-auto max-h-32">
-                      {JSON.stringify(selectedLog.metadata, null, 2)}
-                    </pre>
-                  </div>
+
+                {selectedLog.metadata && (
+                  <Collapsible>
+                    <CollapsibleTrigger asChild>
+                      <Button variant="outline" className="w-full justify-between">
+                        {isRTL ? 'البيانات الوصفية' : 'Metadata'}
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="mt-4">
+                      <pre className="text-xs p-4 bg-muted rounded-lg overflow-auto">
+                        {JSON.stringify(selectedLog.metadata, null, 2)}
+                      </pre>
+                    </CollapsibleContent>
+                  </Collapsible>
                 )}
               </div>
             )}
