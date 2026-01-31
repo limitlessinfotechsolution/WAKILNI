@@ -3,8 +3,10 @@
  * Re-exports auth utilities and adds module-specific helpers
  */
 
+import { USER_ROLES, ROLE_PERMISSIONS, ROLE_HIERARCHY } from '@/config/constants';
+
 export { useAuth, AuthProvider } from '@/lib/auth';
-export { USER_ROLES, ROLE_PERMISSIONS, ROLE_HIERARCHY } from '@/config/constants';
+export { USER_ROLES, ROLE_PERMISSIONS, ROLE_HIERARCHY };
 export { ROUTES, getDashboardRoute, canAccessRoute } from '@/config/routes';
 
 /**
@@ -13,11 +15,11 @@ export { ROUTES, getDashboardRoute, canAccessRoute } from '@/config/routes';
 export function hasPermission(userRole: string | null, permission: string): boolean {
   if (!userRole) return false;
   
-  const rolePermissions = (ROLE_PERMISSIONS as Record<string, string[]>)[userRole];
-  if (!rolePermissions) return false;
+  const permissions = (ROLE_PERMISSIONS as Record<string, readonly string[]>)[userRole];
+  if (!permissions) return false;
   
   // Super admin has all permissions
-  if (rolePermissions.includes('*')) return true;
+  if (permissions.includes('*')) return true;
   
-  return rolePermissions.includes(permission);
+  return permissions.includes(permission);
 }
