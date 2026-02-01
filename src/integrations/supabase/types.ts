@@ -478,6 +478,66 @@ export type Database = {
           },
         ]
       }
+      notification_queue: {
+        Row: {
+          body: string
+          channel: string
+          created_at: string
+          error_message: string | null
+          failed_at: string | null
+          id: string
+          max_retries: number
+          notification_type: string
+          payload: Json
+          priority: number
+          retry_count: number
+          scheduled_at: string
+          sent_at: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          channel?: string
+          created_at?: string
+          error_message?: string | null
+          failed_at?: string | null
+          id?: string
+          max_retries?: number
+          notification_type: string
+          payload?: Json
+          priority?: number
+          retry_count?: number
+          scheduled_at?: string
+          sent_at?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          channel?: string
+          created_at?: string
+          error_message?: string | null
+          failed_at?: string | null
+          id?: string
+          max_retries?: number
+          notification_type?: string
+          payload?: Json
+          priority?: number
+          retry_count?: number
+          scheduled_at?: string
+          sent_at?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       offline_sync_queue: {
         Row: {
           created_at: string | null
@@ -513,6 +573,53 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      payment_idempotency_keys: {
+        Row: {
+          booking_id: string | null
+          completed_at: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          idempotency_key: string
+          request_hash: string | null
+          response_data: Json | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          booking_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          idempotency_key: string
+          request_hash?: string | null
+          response_data?: Json | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          booking_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          idempotency_key?: string
+          request_hash?: string | null
+          response_data?: Json | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_idempotency_keys_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pilgrim_certifications: {
         Row: {
@@ -1473,6 +1580,7 @@ export type Database = {
       }
     }
     Functions: {
+      cleanup_expired_idempotency_keys: { Args: never; Returns: number }
       get_donation_display_info: {
         Args: { donation_row: Database["public"]["Tables"]["donations"]["Row"] }
         Returns: Json

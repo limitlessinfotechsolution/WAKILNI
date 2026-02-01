@@ -94,6 +94,13 @@ export function applyPagination<T>(
 }
 
 // =============================================================================
+// API VERSION
+// =============================================================================
+
+export const API_VERSION = '2026-02-01';
+export const MINIMUM_SUPPORTED_VERSION = '2026-01-01';
+
+// =============================================================================
 // EDGE FUNCTION CALLER
 // =============================================================================
 
@@ -101,13 +108,14 @@ interface EdgeFunctionOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   body?: Record<string, unknown> | object;
   headers?: Record<string, string>;
+  idempotencyKey?: string;
 }
 
 export async function callEdgeFunction<T>(
   functionName: string,
   options: EdgeFunctionOptions = {}
 ): Promise<ApiResponse<T>> {
-  const { method = 'POST', body, headers = {} } = options;
+  const { method = 'POST', body, headers = {}, idempotencyKey } = options;
 
   try {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -120,16 +128,24 @@ export async function callEdgeFunction<T>(
       });
     }
 
+    const requestHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+      'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      'X-API-Version': API_VERSION,
+      ...headers,
+    };
+
+    // Add idempotency key if provided
+    if (idempotencyKey) {
+      requestHeaders['X-Idempotency-Key'] = idempotencyKey;
+    }
+
     const response = await fetch(
       `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`,
       {
         method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          ...headers,
-        },
+        headers: requestHeaders,
         body: body ? JSON.stringify(body) : undefined,
       }
     );
@@ -138,8 +154,9 @@ export async function callEdgeFunction<T>(
 
     if (!response.ok) {
       return createErrorResponse({
-        message: result.error || 'Edge function error',
-        code: `HTTP_${response.status}`,
+        message: result.error?.message || result.error || 'Edge function error',
+        code: result.error?.code || `HTTP_${response.status}`,
+        details: result.error?.description,
       });
     }
 
