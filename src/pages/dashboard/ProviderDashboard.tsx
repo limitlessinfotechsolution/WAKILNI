@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useEffect } from 'react';
-import { Calendar, FileText, Star, Shield, ArrowRight, ArrowLeft, TrendingUp, Clock, MapPin, Plus } from 'lucide-react';
+import { Calendar, FileText, Star, Shield, ArrowRight, ArrowLeft, TrendingUp, TrendingDown, Clock, MapPin, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,7 @@ import { useLanguage } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
 import { useProvider } from '@/hooks/useProvider';
 import { useProviderReviews } from '@/hooks/useReviews';
+import { useProviderStats } from '@/hooks/useProviderStats';
 import { GlassCard, GlassCardContent, StatCard } from '@/components/cards';
 import { SparklineChart } from '@/components/data-display/SparklineChart';
 import { RingChart } from '@/components/data-display/RingChart';
@@ -24,17 +25,25 @@ export default function ProviderDashboard() {
   const { provider, isLoading: providerLoading } = useProvider();
   const { stats: reviewStats } = useProviderReviews(provider?.id);
   const { isLoading, refresh, finishLoading } = useDashboardRefresh();
+  const { 
+    monthlyEarnings, 
+    growthPercentage, 
+    earningsTrend, 
+    completionRate, 
+    averageRating, 
+    totalBookings,
+    currency,
+    isLoading: statsLoading 
+  } = useProviderStats();
 
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
-
-  // Mock sparkline data for earnings trend
-  const earningsTrend = [120, 180, 150, 220, 280, 250, 320, 380, 350, 420, 480, 520];
+  const TrendIcon = growthPercentage >= 0 ? TrendingUp : TrendingDown;
 
   useEffect(() => {
-    if (!providerLoading) {
+    if (!providerLoading && !statsLoading) {
       finishLoading();
     }
-  }, [providerLoading, finishLoading]);
+  }, [providerLoading, statsLoading, finishLoading]);
 
   if (isLoading && providerLoading) {
     return (
@@ -44,8 +53,8 @@ export default function ProviderDashboard() {
     );
   }
 
-  const avgRating = reviewStats?.averageRating || 0;
-  const completionRate = provider?.total_bookings ? 100 : 0;
+  const avgRating = averageRating || reviewStats?.averageRating || 0;
+  const displayCompletionRate = completionRate || (provider?.total_bookings ? 100 : 0);
 
   const kycStatusBadge = () => {
     switch (provider?.kyc_status) {
@@ -64,6 +73,15 @@ export default function ProviderDashboard() {
     { icon: <Calendar className="h-4 w-4" />, label: isRTL ? 'إدارة التوفر' : 'Manage Availability', onClick: () => {} },
     { icon: <FileText className="h-4 w-4" />, label: isRTL ? 'إضافة خدمة' : 'Add Service', onClick: () => {} },
   ];
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat(isRTL ? 'ar-SA' : 'en-SA', {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
 
   return (
     <DashboardLayout>
@@ -123,7 +141,7 @@ export default function ProviderDashboard() {
             </GlassCard>
           )}
 
-          {/* Hero Earnings Card with Sparkline */}
+          {/* Hero Earnings Card with Sparkline - Real Data */}
           <GlassCard variant="gradient" className="overflow-hidden">
             <GlassCardContent className="p-5">
               <div className="flex items-center justify-between">
@@ -132,12 +150,17 @@ export default function ProviderDashboard() {
                     {isRTL ? 'الأرباح هذا الشهر' : "This Month's Earnings"}
                   </p>
                   <p className="text-3xl md:text-4xl font-bold gradient-text-gold">
-                    SAR 0
+                    {formatCurrency(monthlyEarnings)}
                   </p>
                   <div className="flex items-center gap-2 mt-2">
-                    <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-0">
-                      <TrendingUp className="h-3 w-3 mr-1" />
-                      +0%
+                    <Badge className={cn(
+                      "border-0",
+                      growthPercentage >= 0 
+                        ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                        : "bg-red-500/20 text-red-600 dark:text-red-400"
+                    )}>
+                      <TrendIcon className="h-3 w-3 mr-1" />
+                      {growthPercentage >= 0 ? '+' : ''}{growthPercentage}%
                     </Badge>
                     <span className="text-xs text-muted-foreground">
                       {isRTL ? 'مقارنة بالشهر الماضي' : 'vs last month'}
@@ -157,11 +180,11 @@ export default function ProviderDashboard() {
             </GlassCardContent>
           </GlassCard>
 
-          {/* Performance Rings */}
+          {/* Performance Rings - Real Data */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
             <GlassCard className="p-4 flex flex-col items-center justify-center">
               <RingChart 
-                value={completionRate} 
+                value={displayCompletionRate} 
                 size={70} 
                 strokeWidth={6}
                 color="hsl(var(--primary))"
@@ -189,7 +212,7 @@ export default function ProviderDashboard() {
             
             <StatCard
               title={isRTL ? 'الحجوزات' : 'Bookings'}
-              value={provider?.total_bookings || 0}
+              value={totalBookings || provider?.total_bookings || 0}
               subtitle={isRTL ? 'إجمالي' : 'Total'}
               icon={Calendar}
               iconBgColor="bg-blue-500/10"
