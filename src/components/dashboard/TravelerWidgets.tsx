@@ -4,28 +4,38 @@ import { useLanguage } from '@/lib/i18n';
 import { useState, useEffect } from 'react';
 import { WidgetCard } from '@/components/ui/mobile-card';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
+import { usePrayerTimes } from '@/hooks/usePrayerTimes';
+import { useHijriDate } from '@/hooks/useHijriDate';
+import { useQiblaDirection } from '@/hooks/useQiblaDirection';
 
 // Prayer Time Widget
 export function PrayerTimeWidget() {
   const { isRTL } = useLanguage();
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const { prayers, nextPrayer, countdown, location, isLoading } = usePrayerTimes();
 
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  // Mock prayer times - in production, use an API
-  const prayers = [
-    { name: isRTL ? 'الفجر' : 'Fajr', time: '05:23', passed: true },
-    { name: isRTL ? 'الشروق' : 'Sunrise', time: '06:45', passed: true },
-    { name: isRTL ? 'الظهر' : 'Dhuhr', time: '12:15', passed: true },
-    { name: isRTL ? 'العصر' : 'Asr', time: '15:30', passed: false },
-    { name: isRTL ? 'المغرب' : 'Maghrib', time: '18:12', passed: false },
-    { name: isRTL ? 'العشاء' : 'Isha', time: '19:42', passed: false },
-  ];
-
-  const nextPrayer = prayers.find(p => !p.passed) || prayers[0];
+  if (isLoading) {
+    return (
+      <WidgetCard 
+        title={isRTL ? 'أوقات الصلاة' : 'Prayer Times'} 
+        icon={<Clock />}
+        color="primary"
+      >
+        <div className="space-y-3">
+          <div className="text-center">
+            <Skeleton className="h-3 w-20 mx-auto mb-2" />
+            <Skeleton className="h-6 w-16 mx-auto mb-1" />
+            <Skeleton className="h-5 w-12 mx-auto" />
+          </div>
+          <div className="grid grid-cols-3 gap-1">
+            {[...Array(6)].map((_, i) => (
+              <Skeleton key={i} className="h-10 rounded" />
+            ))}
+          </div>
+        </div>
+      </WidgetCard>
+    );
+  }
 
   return (
     <WidgetCard 
@@ -36,9 +46,17 @@ export function PrayerTimeWidget() {
       <div className="text-center mb-3">
         <p className="text-[10px] text-muted-foreground">
           {isRTL ? 'الصلاة القادمة' : 'Next Prayer'}
+          {location && <span className="opacity-60"> • {location}</span>}
         </p>
-        <p className="text-lg md:text-xl font-bold text-primary">{nextPrayer.name}</p>
-        <p className="text-base md:text-lg">{nextPrayer.time}</p>
+        <p className="text-lg md:text-xl font-bold text-primary">
+          {isRTL ? nextPrayer?.nameAr : nextPrayer?.name}
+        </p>
+        <p className="text-base md:text-lg">{nextPrayer?.time}</p>
+        {countdown && (
+          <p className="text-[10px] text-muted-foreground mt-1">
+            {isRTL ? `في ${countdown}` : `in ${countdown}`}
+          </p>
+        )}
       </div>
       <div className="grid grid-cols-3 gap-1 text-[10px]">
         {prayers.slice(0, 6).map((prayer) => (
@@ -49,7 +67,7 @@ export function PrayerTimeWidget() {
               prayer.passed ? 'opacity-50' : 'bg-card'
             )}
           >
-            <p className="font-medium truncate">{prayer.name}</p>
+            <p className="font-medium truncate">{isRTL ? prayer.nameAr : prayer.name}</p>
             <p className="text-muted-foreground">{prayer.time}</p>
           </div>
         ))}
@@ -180,6 +198,35 @@ export function TasbihWidget() {
 // Qibla Direction Widget
 export function QiblaWidget() {
   const { isRTL } = useLanguage();
+  const { 
+    bearing, 
+    relativeDirection, 
+    cardinalDirection, 
+    distance, 
+    isCompassSupported, 
+    isCompassActive, 
+    isLoading, 
+    enableCompass 
+  } = useQiblaDirection();
+
+  const handleEnableCompass = async () => {
+    await enableCompass();
+  };
+
+  if (isLoading) {
+    return (
+      <WidgetCard 
+        title={isRTL ? 'اتجاه القبلة' : 'Qibla'} 
+        icon={<Compass />}
+        color="secondary"
+      >
+        <div className="flex flex-col items-center justify-center py-2">
+          <Skeleton className="w-14 h-14 rounded-full" />
+          <Skeleton className="h-3 w-20 mt-2" />
+        </div>
+      </WidgetCard>
+    );
+  }
 
   return (
     <WidgetCard 
@@ -188,12 +235,48 @@ export function QiblaWidget() {
       color="secondary"
     >
       <div className="flex flex-col items-center justify-center py-2">
-        <div className="relative w-14 h-14 md:w-16 md:h-16">
-          <Compass className="w-full h-full text-secondary animate-pulse" />
+        <div 
+          className="relative w-14 h-14 md:w-16 md:h-16"
+          style={{
+            transform: isCompassActive ? `rotate(${-relativeDirection}deg)` : 'none',
+            transition: 'transform 0.3s ease-out',
+          }}
+        >
+          <Compass className={cn(
+            "w-full h-full text-secondary",
+            isCompassActive && "animate-none"
+          )} />
+          {/* Qibla indicator arrow */}
+          <div 
+            className="absolute top-0 left-1/2 -translate-x-1/2 w-1 h-3 bg-secondary rounded-full"
+            style={{
+              transform: isCompassActive ? 'none' : `rotate(${bearing}deg)`,
+              transformOrigin: 'center 28px',
+            }}
+          />
         </div>
-        <p className="mt-1 text-[10px] text-muted-foreground">
-          {isRTL ? 'اضغط لتحديد' : 'Tap to detect'}
-        </p>
+        
+        <div className="text-center mt-1">
+          <p className="text-sm font-semibold text-secondary">
+            {Math.round(bearing)}° {cardinalDirection}
+          </p>
+          {distance > 0 && (
+            <p className="text-[10px] text-muted-foreground">
+              {Math.round(distance)} km
+            </p>
+          )}
+        </div>
+        
+        {isCompassSupported && !isCompassActive && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleEnableCompass}
+            className="h-6 text-[10px] px-2 mt-1"
+          >
+            {isRTL ? 'تفعيل البوصلة' : 'Enable Compass'}
+          </Button>
+        )}
       </div>
     </WidgetCard>
   );
@@ -202,13 +285,23 @@ export function QiblaWidget() {
 // Hijri Date Widget
 export function HijriDateWidget() {
   const { isRTL } = useLanguage();
+  const { day, month, monthAr, year, holiday, holidayAr, isLoading } = useHijriDate();
 
-  // Mock Hijri date - in production, use a proper library
-  const hijriDate = {
-    day: 15,
-    month: isRTL ? 'رجب' : 'Rajab',
-    year: 1446,
-  };
+  if (isLoading) {
+    return (
+      <WidgetCard 
+        title={isRTL ? 'التاريخ الهجري' : 'Hijri Date'} 
+        icon={<Moon />}
+        color="secondary"
+      >
+        <div className="text-center space-y-2">
+          <Skeleton className="h-8 w-10 mx-auto" />
+          <Skeleton className="h-5 w-16 mx-auto" />
+          <Skeleton className="h-4 w-12 mx-auto" />
+        </div>
+      </WidgetCard>
+    );
+  }
 
   return (
     <WidgetCard 
@@ -217,9 +310,14 @@ export function HijriDateWidget() {
       color="secondary"
     >
       <div className="text-center">
-        <p className="text-2xl md:text-3xl font-bold">{hijriDate.day}</p>
-        <p className="text-base md:text-lg">{hijriDate.month}</p>
-        <p className="text-sm text-muted-foreground">{hijriDate.year} هـ</p>
+        <p className="text-2xl md:text-3xl font-bold">{day}</p>
+        <p className="text-base md:text-lg">{isRTL ? monthAr : month}</p>
+        <p className="text-sm text-muted-foreground">{year} هـ</p>
+        {(holiday || holidayAr) && (
+          <p className="text-xs text-secondary font-medium mt-1">
+            ✨ {isRTL ? holidayAr : holiday}
+          </p>
+        )}
       </div>
     </WidgetCard>
   );
