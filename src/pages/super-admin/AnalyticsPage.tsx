@@ -77,31 +77,38 @@ export default function SuperAdminAnalyticsPage() {
   return (
     <DashboardLayout>
       <div className="p-4 md:p-6 space-y-6">
-        {/* Header */}
+        {/* Header - Premium Super Admin styling */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 text-white shadow-lg">
-              <BarChart3 className="h-5 w-5" />
+          <div className="flex items-center gap-4">
+            <div className="relative p-3 md:p-4 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-violet-500 text-white shadow-xl shadow-purple-500/25">
+              <BarChart3 className="h-6 w-6 md:h-7 md:w-7" />
+              <div className="absolute inset-0 rounded-2xl bg-purple-500 blur-xl opacity-40 -z-10" />
             </div>
             <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Badge className="text-[10px] h-5 px-2 font-bold border-0 text-white bg-gradient-to-r from-red-500 to-rose-500">
+                  <Zap className="h-2.5 w-2.5 mr-1" />
+                  Super Admin
+                </Badge>
+                <Badge variant="outline" className="text-emerald-600 border-emerald-500/50 animate-pulse">
+                  <Activity className="h-2.5 w-2.5 me-1" />
+                  {isRTL ? 'مباشر' : 'Live'}
+                </Badge>
+              </div>
               <h1 className={cn('text-xl md:text-2xl font-bold', isRTL && 'font-arabic')}>
                 {isRTL ? 'التحليلات المتقدمة' : 'Advanced Analytics'}
               </h1>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground mt-0.5">
                 {isRTL ? 'نظرة شاملة على أداء المنصة' : 'Comprehensive platform performance overview'}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-emerald-600 border-emerald-600 animate-pulse">
-              <Activity className="h-3 w-3 me-1" />
-              {isRTL ? 'مباشر' : 'Live'}
-            </Badge>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="rounded-xl">
               <Calendar className="h-4 w-4 me-2" />
               {isRTL ? 'آخر 30 يوم' : 'Last 30 days'}
             </Button>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="rounded-xl">
               <Download className="h-4 w-4 me-2" />
               {isRTL ? 'تصدير' : 'Export'}
             </Button>

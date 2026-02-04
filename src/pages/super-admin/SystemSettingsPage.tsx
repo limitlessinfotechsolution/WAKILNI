@@ -92,16 +92,27 @@ export default function SystemSettingsPage() {
   return (
     <DashboardLayout>
       <div className="p-4 md:p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-gradient-to-br from-red-500 to-rose-500 text-white shadow-lg">
-            <Shield className="h-5 w-5" />
+        {/* Header - Premium Super Admin styling */}
+        <div className="flex items-center gap-4">
+          <div className="relative p-3 md:p-4 rounded-2xl bg-gradient-to-br from-red-500 via-rose-500 to-pink-500 text-white shadow-xl shadow-red-500/25">
+            <Settings className="h-6 w-6 md:h-7 md:w-7" />
+            <div className="absolute inset-0 rounded-2xl bg-red-500 blur-xl opacity-40 -z-10" />
           </div>
           <div>
+            <div className="flex items-center gap-2 mb-1">
+              <Badge className="text-[10px] h-5 px-2 font-bold border-0 text-white bg-gradient-to-r from-red-500 to-rose-500">
+                <Zap className="h-2.5 w-2.5 mr-1" />
+                Super Admin
+              </Badge>
+              <Badge variant="outline" className="text-amber-600 border-amber-500/50">
+                <AlertTriangle className="h-2.5 w-2.5 me-1" />
+                {isRTL ? 'تحكم خطير' : 'Critical Controls'}
+              </Badge>
+            </div>
             <h1 className={cn('text-xl md:text-2xl font-bold', isRTL && 'font-arabic')}>
               {isRTL ? 'إعدادات النظام' : 'System Settings'}
             </h1>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground mt-0.5">
               {isRTL ? 'تحكم المشرف الرئيسي في ميزات النظام' : 'Super Admin system controls'}
             </p>
           </div>
