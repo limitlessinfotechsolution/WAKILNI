@@ -147,53 +147,68 @@ export default function ServicesPage() {
   return (
     <DashboardLayout>
       <PullToRefresh onRefresh={refetch} className="h-full">
-        <div className="p-4 md:p-6 space-y-6">
-          {/* Header */}
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg">
-              <Package className="h-5 w-5" />
+        <div className="p-4 md:p-6 space-y-5 md:space-y-6">
+          {/* Header - Premium styling */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="relative p-3 md:p-4 rounded-2xl bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 text-white shadow-xl shadow-amber-500/25">
+                <Package className="h-6 w-6 md:h-7 md:w-7" />
+                <div className="absolute inset-0 rounded-2xl bg-amber-500 blur-xl opacity-40 -z-10" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <Badge className="text-[10px] h-5 px-2 font-bold border-0 text-white bg-gradient-to-r from-amber-500 to-orange-500">
+                    <Star className="h-2.5 w-2.5 mr-1" />
+                    {isRTL ? 'مقدم خدمة' : 'Provider'}
+                  </Badge>
+                </div>
+                <h1 className={cn('text-xl md:text-2xl font-bold', isRTL && 'font-arabic')}>
+                  {isRTL ? 'خدماتي' : 'My Services'}
+                </h1>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  {isRTL 
+                    ? 'إدارة خدمات الحج والعمرة التي تقدمها'
+                    : 'Manage your pilgrimage service offerings'}
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className={cn('text-xl md:text-2xl font-bold', isRTL && 'font-arabic')}>
-                {isRTL ? 'خدماتي' : 'My Services'}
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                {isRTL 
-                  ? 'إدارة خدمات الحج والعمرة التي تقدمها'
-                  : 'Manage your pilgrimage service offerings'}
-              </p>
-            </div>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-3">
-            <StatCard
-              title={isRTL ? 'إجمالي الخدمات' : 'Total Services'}
-              value={stats.total}
-              icon={Package}
-              className="bg-gradient-to-br from-blue-500/10 to-blue-500/5"
-            />
-            <StatCard
-              title={isRTL ? 'نشطة' : 'Active'}
-              value={stats.active}
-              icon={Eye}
-              className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/5"
-            />
-            <StatCard
-              title={isRTL ? 'متوسط السعر' : 'Avg Price'}
-              value={stats.avgPrice}
-              subtitle="SAR"
-              icon={DollarSign}
-              className="bg-gradient-to-br from-amber-500/10 to-amber-500/5"
-            />
-          </div>
-
-          {/* Desktop Add Button */}
-          <div className="hidden md:flex justify-end">
-            <Button onClick={() => handleOpenForm()} className="gap-2">
+            
+            {/* Desktop Add Button */}
+            <Button onClick={() => handleOpenForm()} className="hidden md:flex gap-2 rounded-xl shadow-md">
               <Plus className="h-4 w-4" />
               {isRTL ? 'إضافة خدمة' : 'Add Service'}
             </Button>
+          </div>
+
+          {/* Stats - Enhanced design */}
+          <div className="grid grid-cols-3 gap-3 md:gap-4">
+            <GlassCard className="p-4 text-center">
+              <div className="inline-flex p-2.5 rounded-xl bg-blue-500/10 mb-2">
+                <Package className="h-5 w-5 text-blue-600" />
+              </div>
+              <p className="text-2xl md:text-3xl font-bold">{stats.total}</p>
+              <p className="text-[11px] text-muted-foreground font-medium">
+                {isRTL ? 'إجمالي الخدمات' : 'Total Services'}
+              </p>
+            </GlassCard>
+            <GlassCard className="p-4 text-center">
+              <div className="inline-flex p-2.5 rounded-xl bg-emerald-500/10 mb-2">
+                <Eye className="h-5 w-5 text-emerald-600" />
+              </div>
+              <p className="text-2xl md:text-3xl font-bold text-emerald-600">{stats.active}</p>
+              <p className="text-[11px] text-muted-foreground font-medium">
+                {isRTL ? 'نشطة' : 'Active'}
+              </p>
+            </GlassCard>
+            <GlassCard className="p-4 text-center">
+              <div className="inline-flex p-2.5 rounded-xl bg-amber-500/10 mb-2">
+                <DollarSign className="h-5 w-5 text-amber-600" />
+              </div>
+              <p className="text-2xl md:text-3xl font-bold text-amber-600">{stats.avgPrice}</p>
+              <p className="text-[11px] text-muted-foreground font-medium">
+                {isRTL ? 'متوسط السعر' : 'Avg Price'} <span className="text-[9px]">SAR</span>
+              </p>
+            </GlassCard>
           </div>
 
           {/* Services List */}

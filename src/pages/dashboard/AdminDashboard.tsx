@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useEffect } from 'react';
 import { 
   Users, Calendar, Heart, Shield, Settings, FileText, TrendingUp, Building2, 
-  Crown, CreditCard, BarChart3, Clock, Sparkles
+  Crown, CreditCard, BarChart3, Clock, Sparkles, Activity, AlertCircle, CheckCircle2, Zap
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +16,8 @@ import { cn } from '@/lib/utils';
 import { PullToRefresh } from '@/components/ui/pull-to-refresh';
 import { AdminDashboardSkeleton } from '@/components/dashboard/DashboardSkeletons';
 import { useDashboardRefresh } from '@/hooks/useDashboardRefresh';
+import { GlassCard } from '@/components/cards';
+import { Progress } from '@/components/ui/progress';
 
 export default function AdminDashboard() {
   const { isRTL } = useLanguage();
@@ -134,32 +136,51 @@ export default function AdminDashboard() {
   return (
     <DashboardLayout>
       <PullToRefresh onRefresh={refresh} className="h-full">
-        <div className="p-4 md:p-6 space-y-4 md:space-y-6">
-        {/* Header - Compact on mobile */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex items-center gap-3">
+        <div className="p-4 md:p-6 space-y-5 md:space-y-6">
+        {/* Header - Premium admin styling */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-4">
             <div className={cn(
-              "p-2.5 md:p-3 rounded-xl text-white shadow-lg shrink-0",
-              isSuperAdmin ? 'bg-gradient-to-br from-red-500 to-pink-500' : 'bg-gradient-to-br from-purple-500 to-indigo-500'
+              "relative p-3 md:p-4 rounded-2xl text-white shadow-xl shrink-0",
+              isSuperAdmin 
+                ? 'bg-gradient-to-br from-red-500 via-rose-500 to-pink-500 shadow-red-500/25' 
+                : 'bg-gradient-to-br from-purple-500 via-violet-500 to-indigo-500 shadow-purple-500/25'
             )}>
-              {isSuperAdmin ? <Crown className="h-5 w-5 md:h-6 md:w-6" /> : <Shield className="h-5 w-5 md:h-6 md:w-6" />}
+              {isSuperAdmin ? <Crown className="h-6 w-6 md:h-7 md:w-7" /> : <Shield className="h-6 w-6 md:h-7 md:w-7" />}
+              {/* Animated glow */}
+              <div className={cn(
+                "absolute inset-0 rounded-2xl blur-xl opacity-40 -z-10",
+                isSuperAdmin ? 'bg-red-500' : 'bg-purple-500'
+              )} />
             </div>
             <div className="min-w-0">
-              <h1 className={cn('text-lg md:text-2xl font-bold truncate', isRTL && 'font-arabic')}>
-                {isRTL ? 'مرحباً' : 'Welcome'}, {profile?.full_name?.split(' ')[0] || (isSuperAdmin ? 'Super Admin' : 'Admin')}
-              </h1>
-              <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-xs md:text-sm text-muted-foreground">
-                  {isSuperAdmin 
-                    ? (isRTL ? 'صلاحيات كاملة' : 'Full Access')
-                    : (isRTL ? 'لوحة تحكم المشرف' : 'Admin Dashboard')
-                  }
-                </p>
-                <Badge variant="outline" className="text-[10px] h-5">
-                  <Sparkles className="h-2.5 w-2.5 mr-1" />
-                  {isSuperAdmin ? 'Super Admin' : 'Admin'}
+              <div className="flex items-center gap-2 mb-1">
+                <Badge className={cn(
+                  "text-[10px] h-5 px-2 font-bold border-0 text-white",
+                  isSuperAdmin 
+                    ? 'bg-gradient-to-r from-red-500 to-rose-500'
+                    : 'bg-gradient-to-r from-purple-500 to-violet-500'
+                )}>
+                  {isSuperAdmin ? (
+                    <><Zap className="h-2.5 w-2.5 mr-1" />Super Admin</>
+                  ) : (
+                    <><Shield className="h-2.5 w-2.5 mr-1" />Admin</>
+                  )}
                 </Badge>
+                <span className="flex items-center gap-1 text-[10px] text-emerald-600">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Active
+                </span>
               </div>
+              <h1 className={cn('text-xl md:text-2xl font-bold', isRTL && 'font-arabic')}>
+                {isRTL ? 'مرحباً' : 'Welcome back'}, {profile?.full_name?.split(' ')[0] || 'Admin'}
+              </h1>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {isSuperAdmin 
+                  ? (isRTL ? 'لديك صلاحيات كاملة على المنصة' : 'You have full platform access')
+                  : (isRTL ? 'إدارة المستخدمين والعمليات' : 'Manage users and operations')
+                }
+              </p>
             </div>
           </div>
           <CreateUserDialog />

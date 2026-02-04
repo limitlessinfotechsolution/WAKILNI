@@ -1,8 +1,8 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Menu, User, LogOut, LayoutDashboard, Settings, Heart, 
-  Globe, Wifi, WifiOff, MapPin, ChevronDown,
-  Moon, Sun, Sparkles, Download, Bell
+  Globe, MapPin, ChevronDown,
+  Moon, Sun, Sparkles, Download, Zap, Shield, Building2, Star, Briefcase
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -38,17 +38,52 @@ interface EnhancedHeaderProps {
   showNav?: boolean;
 }
 
+const roleConfig = {
+  traveler: {
+    label: 'Traveler',
+    labelAr: 'مسافر',
+    gradient: 'from-emerald-500 to-teal-600',
+    icon: Briefcase,
+  },
+  provider: {
+    label: 'Provider',
+    labelAr: 'مقدم خدمة',
+    gradient: 'from-amber-500 to-orange-600',
+    icon: Star,
+  },
+  vendor: {
+    label: 'Vendor',
+    labelAr: 'شركة',
+    gradient: 'from-blue-500 to-indigo-600',
+    icon: Building2,
+  },
+  admin: {
+    label: 'Admin',
+    labelAr: 'مشرف',
+    gradient: 'from-purple-500 to-violet-600',
+    icon: Shield,
+  },
+  super_admin: {
+    label: 'Super Admin',
+    labelAr: 'المشرف الرئيسي',
+    gradient: 'from-red-500 to-rose-600',
+    icon: Zap,
+  },
+};
+
 export function EnhancedHeader({ showNav = true }: EnhancedHeaderProps) {
   const { t, isRTL, language, setLanguage } = useLanguage();
   const { user, profile, role, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   const { location: geoLocation, currency } = useGeolocation();
-  const { isOnline, pendingCount } = useOfflineSync();
+  const { isOnline } = useOfflineSync();
   const { isInstallable, promptInstall } = usePWA();
   const navigate = useNavigate();
   const currentLocation = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+
+  const currentRole = roleConfig[role as keyof typeof roleConfig] || roleConfig.traveler;
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 10);
@@ -73,25 +108,6 @@ export function EnhancedHeader({ showNav = true }: EnhancedHeaderProps) {
       default:
         return '/dashboard';
     }
-  };
-
-  const getRoleBadge = () => {
-    const roleConfig: Record<string, { color: string; label: { en: string; ar: string } }> = {
-      super_admin: { color: 'bg-gradient-to-r from-red-500 to-rose-600 text-white', label: { en: 'Super Admin', ar: 'المشرف الرئيسي' } },
-      admin: { color: 'bg-gradient-to-r from-purple-500 to-violet-600 text-white', label: { en: 'Admin', ar: 'مشرف' } },
-      provider: { color: 'bg-gradient-to-r from-amber-500 to-orange-600 text-white', label: { en: 'Provider', ar: 'مقدم خدمة' } },
-      vendor: { color: 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white', label: { en: 'Vendor', ar: 'شركة' } },
-      traveler: { color: 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white', label: { en: 'Traveler', ar: 'مسافر' } },
-    };
-
-    if (!role) return null;
-    const config = roleConfig[role];
-    
-    return (
-      <Badge className={cn('text-[10px] px-2 py-0.5 font-medium border-0', config?.color)}>
-        {isRTL ? config?.label.ar : config?.label.en}
-      </Badge>
-    );
   };
 
   const getInitials = () => {
@@ -121,59 +137,68 @@ export function EnhancedHeader({ showNav = true }: EnhancedHeaderProps) {
   return (
     <header 
       className={cn(
-        'sticky top-0 z-50 w-full transition-all duration-500',
+        'sticky top-0 z-50 w-full transition-all duration-300',
         scrolled 
-          ? 'bg-background/98 backdrop-blur-xl shadow-lg shadow-primary/5 border-b border-border/50' 
-          : 'bg-background/90 backdrop-blur-md'
+          ? 'bg-background/95 backdrop-blur-xl shadow-sm border-b border-border/50' 
+          : 'bg-background/80 backdrop-blur-md'
       )}
     >
-      {/* Premium Top Bar - Only show on landing pages, not dashboard */}
+      {/* Compact Top Bar - Only show on public pages */}
       {showNav && (
-        <div className="hidden lg:block bg-gradient-to-r from-primary/5 via-secondary/5 to-primary/5 border-b border-border/30">
+        <div className="hidden lg:block border-b border-border/30 bg-muted/30">
           <div className="container">
-            <div className="flex items-center justify-between py-2 px-4 text-xs">
-              <div className="flex items-center gap-6">
+            <div className="flex items-center justify-between py-1.5 px-4 text-xs">
+              <div className="flex items-center gap-4">
                 {/* Location & Currency */}
                 {geoLocation && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-background/80 border border-border/50">
-                      <MapPin className="h-3 w-3 text-primary" />
-                      <span className="font-medium">{geoLocation.city}, {geoLocation.country_name}</span>
-                      <Separator orientation="vertical" className="h-3 mx-1" />
-                      <span className="text-primary font-semibold">({currency.code})</span>
-                    </div>
+                  <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <MapPin className="h-3 w-3" />
+                    <span className="font-medium">{geoLocation.city}, {geoLocation.country_code}</span>
+                    <span className="text-primary font-semibold">({currency.code})</span>
                   </div>
                 )}
+                
+                {/* Online Status */}
+                <div className="flex items-center gap-1.5">
+                  <span className={cn(
+                    'w-1.5 h-1.5 rounded-full',
+                    isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
+                  )} />
+                  <span className="text-muted-foreground text-[11px]">
+                    {isOnline ? 'Online' : 'Offline'}
+                  </span>
+                </div>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 {/* Install PWA Button */}
                 {isInstallable && (
                   <button
                     onClick={promptInstall}
-                    className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary text-primary-foreground text-[11px] font-medium hover:bg-primary/90 transition-colors"
                   >
                     <Download className="h-3 w-3" />
-                    {isRTL ? 'تثبيت التطبيق' : 'Install App'}
+                    {isRTL ? 'تثبيت' : 'Install'}
                   </button>
                 )}
+
+                <Separator orientation="vertical" className="h-3" />
 
                 {/* Theme Toggle */}
                 <button
                   onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
+                  className="flex items-center gap-1 px-2 py-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
                 >
-                  {theme === 'dark' ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
-                  <span className="font-medium">{theme === 'dark' ? (isRTL ? 'فاتح' : 'Light') : (isRTL ? 'داكن' : 'Dark')}</span>
+                  {theme === 'dark' ? <Sun className="h-3 w-3" /> : <Moon className="h-3 w-3" />}
                 </button>
 
                 {/* Language Toggle */}
                 <button
                   onClick={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
+                  className="flex items-center gap-1 px-2 py-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
                 >
-                  <Globe className="h-3.5 w-3.5" />
-                  <span className="font-medium">{language === 'ar' ? 'English' : 'العربية'}</span>
+                  <Globe className="h-3 w-3" />
+                  <span className="font-medium text-[11px]">{language === 'ar' ? 'EN' : 'عربي'}</span>
                 </button>
               </div>
             </div>
@@ -183,26 +208,30 @@ export function EnhancedHeader({ showNav = true }: EnhancedHeaderProps) {
 
       {/* Main Header */}
       <div className="container">
-        <div className="flex h-14 md:h-16 items-center justify-between px-3 md:px-4 lg:px-0">
-          {/* Logo - Compact on mobile */}
-          <Link to="/" className="flex items-center gap-2 md:gap-3 group">
+        <div className="flex h-14 items-center justify-between px-3 md:px-4 lg:px-0">
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-2.5 group">
             <div className="relative">
-              <div className="flex h-9 w-9 md:h-11 md:w-11 items-center justify-center rounded-lg md:rounded-xl overflow-hidden shadow-lg shadow-primary/25 group-hover:shadow-xl group-hover:shadow-primary/30 transition-all duration-300">
+              <div className="flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-xl overflow-hidden shadow-md group-hover:shadow-lg transition-shadow">
                 <img src={wakilniLogo} alt="Wakilni" className="h-full w-full object-cover" />
               </div>
-              <div className="absolute -inset-1 rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10 blur-sm" />
             </div>
-            <span className={cn(
-              'text-lg md:text-xl font-bold text-foreground leading-none tracking-tight hidden xs:inline',
-              isRTL && 'font-arabic'
-            )}>
-              {t.brand}
-            </span>
+            <div className="hidden xs:flex flex-col">
+              <span className={cn(
+                'text-lg font-bold leading-none',
+                isRTL && 'font-arabic'
+              )}>
+                {t.brand}
+              </span>
+              <span className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider">
+                {isRTL ? 'الحج والعمرة' : 'Hajj & Umrah'}
+              </span>
+            </div>
           </Link>
 
           {/* Desktop Navigation */}
           {showNav && (
-            <nav className="hidden lg:flex items-center gap-1 bg-muted/30 rounded-full px-2 py-1.5 border border-border/50">
+            <nav className="hidden lg:flex items-center gap-1 bg-muted/40 rounded-full px-1.5 py-1 border border-border/40">
               {navLinks.map((link) => {
                 const isActive = currentLocation.pathname === link.href;
                 const Icon = link.icon;
@@ -211,13 +240,13 @@ export function EnhancedHeader({ showNav = true }: EnhancedHeaderProps) {
                     key={link.href}
                     to={link.href}
                     className={cn(
-                      'flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full transition-all duration-200',
+                      'flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium rounded-full transition-all',
                       isActive
                         ? 'bg-primary text-primary-foreground shadow-sm'
                         : 'text-muted-foreground hover:text-foreground hover:bg-background/80'
                     )}
                   >
-                    {Icon && <Icon className="h-4 w-4" />}
+                    {Icon && <Icon className="h-3.5 w-3.5" />}
                     <span className={isRTL ? 'font-arabic' : ''}>{link.label}</span>
                   </Link>
                 );
@@ -226,13 +255,13 @@ export function EnhancedHeader({ showNav = true }: EnhancedHeaderProps) {
           )}
 
           {/* Right Side Actions */}
-          <div className="flex items-center gap-1 md:gap-2">
-            {/* Mobile Quick Actions - Smaller on mobile */}
+          <div className="flex items-center gap-1">
+            {/* Mobile Quick Actions */}
             <div className="lg:hidden flex items-center">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 md:h-9 md:w-9 rounded-full"
+                className="h-9 w-9 rounded-full"
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
               >
                 {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
@@ -240,7 +269,7 @@ export function EnhancedHeader({ showNav = true }: EnhancedHeaderProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 md:h-9 md:w-9 rounded-full"
+                className="h-9 w-9 rounded-full"
                 onClick={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
               >
                 <Globe className="h-4 w-4" />
@@ -256,11 +285,14 @@ export function EnhancedHeader({ showNav = true }: EnhancedHeaderProps) {
                 <DropdownMenuTrigger asChild>
                   <Button 
                     variant="ghost" 
-                    className="relative h-11 gap-2.5 px-2 hover:bg-muted/50 rounded-full border border-transparent hover:border-border/50 transition-all"
+                    className="relative h-10 gap-2 px-2 hover:bg-muted/50 rounded-full border border-transparent hover:border-border/50 transition-all"
                   >
-                    <Avatar className="h-9 w-9 border-2 border-primary/30 shadow-sm">
+                    <Avatar className="h-8 w-8 border-2 border-primary/20">
                       <AvatarImage src={profile?.avatar_url || ''} alt={profile?.full_name || ''} />
-                      <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground text-sm font-semibold">
+                      <AvatarFallback className={cn(
+                        'bg-gradient-to-br text-white text-sm font-bold',
+                        currentRole.gradient
+                      )}>
                         {getInitials()}
                       </AvatarFallback>
                     </Avatar>
@@ -268,25 +300,38 @@ export function EnhancedHeader({ showNav = true }: EnhancedHeaderProps) {
                       <span className="text-sm font-semibold leading-tight">
                         {profile?.full_name?.split(' ')[0] || 'User'}
                       </span>
-                      {getRoleBadge()}
+                      <Badge className={cn(
+                        'text-[9px] px-1.5 py-0 h-4 font-medium border-0 text-white',
+                        `bg-gradient-to-r ${currentRole.gradient}`
+                      )}>
+                        {isRTL ? currentRole.labelAr : currentRole.label}
+                      </Badge>
                     </div>
-                    <ChevronDown className="h-4 w-4 text-muted-foreground hidden md:block" />
+                    <ChevronDown className="h-3.5 w-3.5 text-muted-foreground hidden md:block" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-72" align={isRTL ? 'start' : 'end'} sideOffset={8}>
+                <DropdownMenuContent className="w-64" align={isRTL ? 'start' : 'end'} sideOffset={8}>
                   {/* User Profile Card */}
-                  <div className="p-4 bg-gradient-to-br from-primary/5 to-secondary/5 rounded-lg m-2 border border-border/50">
+                  <div className="p-3 bg-gradient-to-br from-muted/50 to-muted/30 rounded-lg m-1.5 border border-border/50">
                     <div className="flex items-center gap-3">
-                      <Avatar className="h-14 w-14 border-2 border-primary/30 shadow-md">
+                      <Avatar className="h-12 w-12 border-2 border-primary/20">
                         <AvatarImage src={profile?.avatar_url || ''} />
-                        <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground text-lg font-bold">
+                        <AvatarFallback className={cn(
+                          'bg-gradient-to-br text-white text-lg font-bold',
+                          currentRole.gradient
+                        )}>
                           {getInitials()}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold truncate text-foreground">{profile?.full_name || 'User'}</p>
+                        <p className="font-bold truncate">{profile?.full_name || 'User'}</p>
                         <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                        <div className="mt-1.5">{getRoleBadge()}</div>
+                        <Badge className={cn(
+                          'mt-1 text-[9px] px-1.5 py-0 h-4 font-medium border-0 text-white',
+                          `bg-gradient-to-r ${currentRole.gradient}`
+                        )}>
+                          {isRTL ? currentRole.labelAr : currentRole.label}
+                        </Badge>
                       </div>
                     </div>
                   </div>
@@ -295,52 +340,30 @@ export function EnhancedHeader({ showNav = true }: EnhancedHeaderProps) {
                   
                   <DropdownMenuGroup className="p-1">
                     <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
-                      <Link to={getDashboardLink()} className="flex items-center gap-3 py-2.5 px-3">
-                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <LayoutDashboard className="h-4 w-4 text-primary" />
+                      <Link to={getDashboardLink()} className="flex items-center gap-3 py-2 px-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <LayoutDashboard className="h-3.5 w-3.5 text-primary" />
                         </div>
-                        <span className="font-medium">{t.nav.dashboard}</span>
+                        <span className="font-medium text-sm">{t.nav.dashboard}</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
-                      <Link to="/settings/profile" className="flex items-center gap-3 py-2.5 px-3">
-                        <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
-                          <User className="h-4 w-4 text-muted-foreground" />
+                      <Link to="/settings/profile" className="flex items-center gap-3 py-2 px-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center">
+                          <User className="h-3.5 w-3.5 text-muted-foreground" />
                         </div>
-                        <span className="font-medium">{t.nav.profile}</span>
+                        <span className="font-medium text-sm">{t.nav.profile}</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
-                      <Link to="/settings/profile" className="flex items-center gap-3 py-2.5 px-3">
-                        <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
-                          <Settings className="h-4 w-4 text-muted-foreground" />
+                      <Link to="/settings/profile" className="flex items-center gap-3 py-2 px-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center">
+                          <Settings className="h-3.5 w-3.5 text-muted-foreground" />
                         </div>
-                        <span className="font-medium">{t.nav.settings}</span>
+                        <span className="font-medium text-sm">{t.nav.settings}</span>
                       </Link>
                     </DropdownMenuItem>
                   </DropdownMenuGroup>
-                  
-                  <DropdownMenuSeparator />
-                  
-                  {/* Status Footer */}
-                  <div className="px-3 py-2 mx-2 mb-1 rounded-lg bg-muted/50 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5">
-                        {isOnline ? (
-                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                        ) : (
-                          <span className="w-2 h-2 rounded-full bg-amber-500" />
-                        )}
-                        <span className="text-muted-foreground">{isOnline ? 'Online' : 'Offline'}</span>
-                      </span>
-                      {geoLocation && (
-                        <span className="flex items-center gap-1 text-muted-foreground">
-                          <MapPin className="h-3 w-3" />
-                          {geoLocation.country_code}
-                        </span>
-                      )}
-                    </div>
-                  </div>
                   
                   <DropdownMenuSeparator />
                   
@@ -355,12 +378,12 @@ export function EnhancedHeader({ showNav = true }: EnhancedHeaderProps) {
               </DropdownMenu>
             ) : (
               <div className="hidden md:flex items-center gap-2">
-                <Button variant="ghost" asChild className="rounded-full font-medium">
+                <Button variant="ghost" size="sm" asChild className="rounded-full font-medium">
                   <Link to="/login">{t.nav.login}</Link>
                 </Button>
-                <Button asChild className="rounded-full gap-2 shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-shadow">
+                <Button size="sm" asChild className="rounded-full gap-1.5 shadow-md shadow-primary/20 hover:shadow-primary/30 transition-shadow">
                   <Link to="/signup">
-                    <Sparkles className="h-4 w-4" />
+                    <Sparkles className="h-3.5 w-3.5" />
                     {t.nav.signup}
                   </Link>
                 </Button>
@@ -370,87 +393,55 @@ export function EnhancedHeader({ showNav = true }: EnhancedHeaderProps) {
             {/* Mobile Menu */}
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="lg:hidden h-10 w-10 rounded-full">
+                <Button variant="ghost" size="icon" className="lg:hidden h-9 w-9 rounded-full">
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side={isRTL ? 'left' : 'right'} className="w-80 p-0">
-                <SheetHeader className="p-6 pb-4 border-b bg-gradient-to-br from-primary/5 to-secondary/5">
-                  <SheetTitle className={cn('text-start', isRTL && 'font-arabic text-end')}>
+              <SheetContent side={isRTL ? 'left' : 'right'} className="w-72 p-0">
+                <SheetHeader className="p-4 pb-3 border-b">
+                  <SheetTitle className={cn('text-start text-base', isRTL && 'font-arabic text-end')}>
                     {isRTL ? 'القائمة' : 'Menu'}
                   </SheetTitle>
                 </SheetHeader>
                 
-                <div className="p-4">
-                  {/* Status Bar */}
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border/50 mb-4">
-                    <div className="flex items-center gap-2">
-                      {isOnline ? (
-                        <div className="flex items-center gap-1.5 text-emerald-600">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                          <span className="text-sm font-medium">Online</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1.5 text-amber-600">
-                          <WifiOff className="h-4 w-4" />
-                          <span className="text-sm font-medium">Offline</span>
-                        </div>
-                      )}
-                    </div>
-                    {geoLocation && (
-                      <Badge variant="secondary" className="text-xs">
-                        {geoLocation.country_code} • {currency.code}
-                      </Badge>
-                    )}
-                  </div>
-
+                <div className="p-3">
                   {/* Navigation Links */}
                   <nav className="space-y-1">
                     {navLinks.map((link) => {
-                      const Icon = link.icon;
                       const isActive = currentLocation.pathname === link.href;
+                      const Icon = link.icon;
                       return (
                         <Link
                           key={link.href}
                           to={link.href}
                           onClick={() => setMobileMenuOpen(false)}
                           className={cn(
-                            'flex items-center gap-3 px-4 py-3 rounded-xl transition-all',
-                            isActive 
-                              ? 'bg-primary text-primary-foreground shadow-sm' 
-                              : 'hover:bg-muted'
+                            'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors',
+                            isActive
+                              ? 'bg-primary text-primary-foreground'
+                              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                           )}
                         >
-                          {Icon && <Icon className="h-5 w-5" />}
-                          <span className={cn('font-medium', isRTL && 'font-arabic')}>{link.label}</span>
+                          {Icon && <Icon className="h-4 w-4" />}
+                          <span className={isRTL ? 'font-arabic' : ''}>{link.label}</span>
                         </Link>
                       );
                     })}
                   </nav>
                   
-                  {/* Install App Button */}
-                  {isInstallable && (
-                    <Button 
-                      onClick={promptInstall} 
-                      className="w-full mt-4 gap-2 rounded-xl"
-                    >
-                      <Download className="h-4 w-4" />
-                      {isRTL ? 'تثبيت التطبيق' : 'Install App'}
-                    </Button>
-                  )}
+                  <Separator className="my-4" />
                   
+                  {/* Auth Buttons for non-logged in users */}
                   {!user && (
-                    <div className="flex flex-col gap-2 mt-6 pt-4 border-t">
-                      <Button variant="outline" asChild className="w-full rounded-xl">
-                        <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
-                          {t.nav.login}
-                        </Link>
-                      </Button>
-                      <Button asChild className="w-full rounded-xl gap-2">
-                        <Link to="/signup" onClick={() => setMobileMenuOpen(false)}>
+                    <div className="space-y-2">
+                      <Button asChild className="w-full rounded-xl gap-2" onClick={() => setMobileMenuOpen(false)}>
+                        <Link to="/signup">
                           <Sparkles className="h-4 w-4" />
                           {t.nav.signup}
                         </Link>
+                      </Button>
+                      <Button variant="outline" asChild className="w-full rounded-xl" onClick={() => setMobileMenuOpen(false)}>
+                        <Link to="/login">{t.nav.login}</Link>
                       </Button>
                     </div>
                   )}
