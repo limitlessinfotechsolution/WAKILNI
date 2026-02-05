@@ -1,6 +1,7 @@
-import { useForm } from 'react-hook-form';
+import { useState } from 'react';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { Plus, Trash2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -21,22 +22,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import { useLanguage } from '@/lib/i18n';
-import type { Service, ServiceType } from '@/hooks/useProviderServices';
-
-const serviceSchema = z.object({
-  title: z.string().min(3, 'Title must be at least 3 characters').max(100),
-  title_ar: z.string().max(100).optional(),
-  description: z.string().min(20, 'Description must be at least 20 characters').max(1000),
-  description_ar: z.string().max(1000).optional(),
-  service_type: z.enum(['umrah', 'hajj', 'ziyarat']),
-  price: z.number().min(1, 'Price must be at least 1'),
-  currency: z.string().default('SAR'),
-  duration_days: z.number().min(1).max(365).optional(),
-  is_active: z.boolean().default(true),
-});
-
-type ServiceFormData = z.infer<typeof serviceSchema>;
+import { ServiceFormSchema, SERVICE_INCLUDE_SUGGESTIONS } from '@/api/schemas/service.schema';
+import type { ServiceFormData } from '@/api/schemas/service.schema';
+import type { Service } from '@/hooks/useProviderServices';
+import { ServiceImageUpload } from './ServiceImageUpload';
+import { useProvider } from '@/hooks/useProvider';
 
 interface ServiceFormProps {
   service?: Service | null;
@@ -45,37 +38,62 @@ interface ServiceFormProps {
   isSubmitting?: boolean;
 }
 
-const serviceTypeOptions: { value: ServiceType; labelEn: string; labelAr: string }[] = [
-  { value: 'umrah', labelEn: 'Umrah', labelAr: 'عمرة' },
-  { value: 'hajj', labelEn: 'Hajj', labelAr: 'حج' },
-  { value: 'ziyarat', labelEn: 'Ziyarat', labelAr: 'زيارة' },
+const serviceTypeOptions = [
+  { value: 'umrah' as const, labelEn: 'Umrah', labelAr: 'عمرة', icon: '🕋' },
+  { value: 'hajj' as const, labelEn: 'Hajj', labelAr: 'حج', icon: '🏔️' },
+  { value: 'ziyarat' as const, labelEn: 'Ziyarat', labelAr: 'زيارة', icon: '🕌' },
 ];
 
 export function ServiceForm({ service, onSubmit, onCancel, isSubmitting }: ServiceFormProps) {
   const { t, isRTL } = useLanguage();
+  const { provider } = useProvider();
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Parse existing includes from service
+  const existingIncludes = (service?.includes as { en: string; ar: string }[] | null) || [];
 
   const form = useForm<ServiceFormData>({
-    resolver: zodResolver(serviceSchema),
+    resolver: zodResolver(ServiceFormSchema),
     defaultValues: {
       title: service?.title || '',
       title_ar: service?.title_ar || '',
       description: service?.description || '',
       description_ar: service?.description_ar || '',
-      service_type: (service?.service_type as ServiceType) || 'umrah',
+      service_type: (service?.service_type as 'umrah' | 'hajj' | 'ziyarat') || 'umrah',
       price: service?.price || 0,
       currency: service?.currency || 'SAR',
       duration_days: service?.duration_days || undefined,
       is_active: service?.is_active ?? true,
+      includes: existingIncludes.length > 0 ? existingIncludes : [],
+      hero_image_url: (service as any)?.hero_image_url || null,
+      gallery_urls: (service as any)?.gallery_urls || [],
     },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: 'includes',
   });
 
   const handleSubmit = async (data: ServiceFormData) => {
     await onSubmit(data);
   };
 
+  const addIncludeItem = () => {
+    append({ en: '', ar: '' });
+  };
+
+  const addSuggestion = (suggestion: { en: string; ar: string }) => {
+    // Check if already added
+    const currentIncludes = form.getValues('includes') || [];
+    if (currentIncludes.some(item => item.en === suggestion.en)) return;
+    append(suggestion);
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+        {/* Service Type */}
         <FormField
           control={form.control}
           name="service_type"
@@ -91,7 +109,7 @@ export function ServiceForm({ service, onSubmit, onCancel, isSubmitting }: Servi
                 <SelectContent>
                   {serviceTypeOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
-                      {isRTL ? option.labelAr : option.labelEn}
+                      {option.icon} {isRTL ? option.labelAr : option.labelEn}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -101,6 +119,23 @@ export function ServiceForm({ service, onSubmit, onCancel, isSubmitting }: Servi
           )}
         />
 
+        {/* Hero Image & Gallery */}
+        {provider && (
+          <div className="space-y-2">
+            <FormLabel>{isRTL ? 'صور الخدمة' : 'Service Images'}</FormLabel>
+            <ServiceImageUpload
+              heroImage={form.watch('hero_image_url') || null}
+              galleryImages={form.watch('gallery_urls') || []}
+              onHeroImageChange={(url) => form.setValue('hero_image_url', url)}
+              onGalleryChange={(urls) => form.setValue('gallery_urls', urls)}
+              providerId={provider.id}
+            />
+          </div>
+        )}
+
+        <Separator />
+
+        {/* Title Fields */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
@@ -135,6 +170,7 @@ export function ServiceForm({ service, onSubmit, onCancel, isSubmitting }: Servi
           />
         </div>
 
+        {/* Description Fields */}
         <FormField
           control={form.control}
           name="description"
@@ -175,6 +211,9 @@ export function ServiceForm({ service, onSubmit, onCancel, isSubmitting }: Servi
           )}
         />
 
+        <Separator />
+
+        {/* Price, Currency, Duration */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <FormField
             control={form.control}
@@ -243,6 +282,120 @@ export function ServiceForm({ service, onSubmit, onCancel, isSubmitting }: Servi
           />
         </div>
 
+        <Separator />
+
+        {/* What's Included - Dynamic List */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <FormLabel className="text-base">
+              {isRTL ? 'ما يشمله العرض' : "What's Included"}
+            </FormLabel>
+            <div className="flex gap-2">
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowSuggestions(!showSuggestions)}
+              >
+                <Sparkles className="h-4 w-4 mr-1" />
+                {isRTL ? 'اقتراحات' : 'Suggestions'}
+              </Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm"
+                onClick={addIncludeItem}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                {isRTL ? 'إضافة' : 'Add Item'}
+              </Button>
+            </div>
+          </div>
+
+          {/* Suggestions */}
+          {showSuggestions && (
+            <div className="flex flex-wrap gap-2 p-4 bg-muted/50 rounded-lg">
+              {SERVICE_INCLUDE_SUGGESTIONS.map((suggestion, idx) => {
+                const currentIncludes = form.watch('includes') || [];
+                const isAdded = currentIncludes.some(item => item.en === suggestion.en);
+                return (
+                  <Badge 
+                    key={idx}
+                    variant={isAdded ? "secondary" : "outline"}
+                    className={`cursor-pointer transition-colors ${
+                      isAdded ? 'opacity-50' : 'hover:bg-primary hover:text-primary-foreground'
+                    }`}
+                    onClick={() => !isAdded && addSuggestion(suggestion)}
+                  >
+                    {isAdded ? '✓ ' : '+ '}
+                    {isRTL && suggestion.ar ? suggestion.ar : suggestion.en}
+                  </Badge>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Dynamic Fields */}
+          <div className="space-y-3">
+            {fields.map((field, index) => (
+              <div key={field.id} className="flex gap-3 items-start">
+                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <FormField
+                    control={form.control}
+                    name={`includes.${index}.en`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Input 
+                            placeholder={isRTL ? 'بالإنجليزية' : 'English'} 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={`includes.${index}.ar`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Input 
+                            placeholder={isRTL ? 'بالعربية' : 'Arabic'} 
+                            dir="rtl"
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="icon"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={() => remove(index)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+            {fields.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                {isRTL 
+                  ? 'لم تتم إضافة أي عناصر بعد. انقر على "إضافة" أو اختر من الاقتراحات.'
+                  : 'No items added yet. Click "Add Item" or choose from suggestions.'}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* Active Toggle */}
         <FormField
           control={form.control}
           name="is_active"
@@ -268,6 +421,7 @@ export function ServiceForm({ service, onSubmit, onCancel, isSubmitting }: Servi
           )}
         />
 
+        {/* Actions */}
         <div className="flex gap-3 justify-end">
           <Button type="button" variant="outline" onClick={onCancel}>
             {t.common.cancel}

@@ -37,6 +37,14 @@ export const ERROR_CODES = {
   PROVIDER_002: 'PROVIDER_002',
   PROVIDER_003: 'PROVIDER_003',
   
+  // Service Errors (SERVICE_XXX)
+  SERVICE_001: 'SERVICE_001',
+  SERVICE_002: 'SERVICE_002',
+  SERVICE_003: 'SERVICE_003',
+  SERVICE_004: 'SERVICE_004',
+  SERVICE_005: 'SERVICE_005',
+  SERVICE_006: 'SERVICE_006',
+  
   // Resource Errors (RESOURCE_XXX)
   RESOURCE_001: 'RESOURCE_001',
   RESOURCE_002: 'RESOURCE_002',
@@ -139,6 +147,32 @@ export const ERROR_MESSAGES: Record<ErrorCode, { message: string; description: s
     description: 'This provider account has been suspended',
   },
   
+  // Service
+  [ERROR_CODES.SERVICE_001]: {
+    message: 'Service not found',
+    description: 'The requested service could not be found',
+  },
+  [ERROR_CODES.SERVICE_002]: {
+    message: 'Service is inactive',
+    description: 'This service is currently not available',
+  },
+  [ERROR_CODES.SERVICE_003]: {
+    message: 'Not authorized to modify this service',
+    description: 'You do not have permission to modify this service',
+  },
+  [ERROR_CODES.SERVICE_004]: {
+    message: 'Cannot delete service with active bookings',
+    description: 'This service has active bookings and cannot be deleted',
+  },
+  [ERROR_CODES.SERVICE_005]: {
+    message: 'Provider KYC not approved',
+    description: 'Your KYC verification must be approved to create services',
+  },
+  [ERROR_CODES.SERVICE_006]: {
+    message: 'Invalid service data',
+    description: 'The service data provided is invalid',
+  },
+  
   // Resource
   [ERROR_CODES.RESOURCE_001]: {
     message: 'Resource not found',
@@ -221,6 +255,13 @@ export const ERROR_HTTP_STATUS: Record<ErrorCode, number> = {
   
   [ERROR_CODES.RESOURCE_001]: 404,
   [ERROR_CODES.RESOURCE_002]: 409,
+  
+  [ERROR_CODES.SERVICE_001]: 404,
+  [ERROR_CODES.SERVICE_002]: 400,
+  [ERROR_CODES.SERVICE_003]: 403,
+  [ERROR_CODES.SERVICE_004]: 400,
+  [ERROR_CODES.SERVICE_005]: 403,
+  [ERROR_CODES.SERVICE_006]: 400,
   
   [ERROR_CODES.SYSTEM_001]: 500,
   [ERROR_CODES.SYSTEM_002]: 503,

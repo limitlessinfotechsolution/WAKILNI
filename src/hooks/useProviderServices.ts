@@ -1,143 +1,123 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/lib/auth';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useProvider } from './useProvider';
-import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
+import * as ServicesAPI from '@/api/services/services.service';
+import type { Service, ServiceInsert, ServiceUpdate } from '@/api/services/services.service';
 
-export type Service = Tables<'services'>;
-export type ServiceInsert = TablesInsert<'services'>;
-export type ServiceUpdate = TablesUpdate<'services'>;
+export type { Service, ServiceInsert, ServiceUpdate };
 export type ServiceType = 'umrah' | 'hajj' | 'ziyarat';
 
 export function useProviderServices() {
-  const { user } = useAuth();
   const { provider } = useProvider();
   const { toast } = useToast();
-  const [services, setServices] = useState<Service[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const fetchServices = async () => {
-    if (!provider) {
-      setIsLoading(false);
-      return;
-    }
+  const queryKey = ['provider-services', provider?.id];
 
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('services')
-        .select('*')
-        .eq('provider_id', provider.id)
-        .order('created_at', { ascending: false });
+  const { data: services = [], isLoading } = useQuery({
+    queryKey,
+    queryFn: async () => {
+      if (!provider) return [];
+      const result = await ServicesAPI.getProviderServices(provider.id, true);
+      if (!result.success) throw new Error(result.error?.message);
+      return result.data || [];
+    },
+    enabled: !!provider,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 
-      if (error) throw error;
-      setServices(data || []);
-    } catch (error) {
-      console.error('Error fetching services:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch services',
-        variant: 'destructive',
+  const addServiceMutation = useMutation({
+    mutationFn: async (service: Omit<ServiceInsert, 'provider_id'>) => {
+      if (!provider) throw new Error('No provider');
+      const result = await ServicesAPI.createService({
+        ...service,
+        provider_id: provider.id,
       });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const addService = async (service: Omit<ServiceInsert, 'provider_id'>) => {
-    if (!provider) return null;
-
-    try {
-      const { data, error } = await supabase
-        .from('services')
-        .insert({
-          ...service,
-          provider_id: provider.id,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setServices(prev => [data, ...prev]);
+      if (!result.success) throw new Error(result.error?.message);
+      return result.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey });
       toast({
         title: 'Success',
         description: 'Service added successfully',
       });
-      return data;
-    } catch (error) {
+    },
+    onError: (error) => {
       console.error('Error adding service:', error);
       toast({
         title: 'Error',
         description: 'Failed to add service',
         variant: 'destructive',
       });
-      return null;
-    }
-  };
+    },
+  });
 
-  const updateService = async (id: string, updates: ServiceUpdate) => {
-    try {
-      const { data, error } = await supabase
-        .from('services')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setServices(prev => prev.map(s => (s.id === id ? data : s)));
+  const updateServiceMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: ServiceUpdate }) => {
+      const result = await ServicesAPI.updateService(id, updates);
+      if (!result.success) throw new Error(result.error?.message);
+      return result.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey });
       toast({
         title: 'Success',
         description: 'Service updated successfully',
       });
-      return data;
-    } catch (error) {
+    },
+    onError: (error) => {
       console.error('Error updating service:', error);
       toast({
         title: 'Error',
         description: 'Failed to update service',
         variant: 'destructive',
       });
-      return null;
-    }
-  };
+    },
+  });
 
-  const deleteService = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('services')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
-      setServices(prev => prev.filter(s => s.id !== id));
+  const deleteServiceMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const result = await ServicesAPI.deleteService(id);
+      if (!result.success) throw new Error(result.error?.message);
+      return result.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey });
       toast({
         title: 'Success',
         description: 'Service deleted successfully',
       });
-      return true;
-    } catch (error) {
+    },
+    onError: (error) => {
       console.error('Error deleting service:', error);
       toast({
         title: 'Error',
         description: 'Failed to delete service',
         variant: 'destructive',
       });
-      return false;
-    }
+    },
+  });
+
+  const addService = async (service: Omit<ServiceInsert, 'provider_id'>) => {
+    return addServiceMutation.mutateAsync(service);
+  };
+
+  const updateService = async (id: string, updates: ServiceUpdate) => {
+    return updateServiceMutation.mutateAsync({ id, updates });
+  };
+
+  const deleteService = async (id: string) => {
+    return deleteServiceMutation.mutateAsync(id);
   };
 
   const toggleServiceActive = async (id: string, isActive: boolean) => {
     return updateService(id, { is_active: isActive });
   };
 
-  useEffect(() => {
-    fetchServices();
-  }, [provider]);
+  const refetch = () => {
+    queryClient.invalidateQueries({ queryKey });
+  };
 
   return {
     services,
@@ -146,6 +126,6 @@ export function useProviderServices() {
     updateService,
     deleteService,
     toggleServiceActive,
-    refetch: fetchServices,
+    refetch,
   };
 }
