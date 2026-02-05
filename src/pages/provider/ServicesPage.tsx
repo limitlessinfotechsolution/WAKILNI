@@ -146,7 +146,7 @@ export default function ServicesPage() {
 
   return (
     <DashboardLayout>
-      <PullToRefresh onRefresh={refetch} className="h-full">
+      <PullToRefresh onRefresh={() => { refetch(); return Promise.resolve(); }} className="h-full">
         <div className="p-4 md:p-6 space-y-5 md:space-y-6">
           {/* Header - Premium styling */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

@@ -1177,11 +1177,17 @@ export type Database = {
           description: string | null
           description_ar: string | null
           duration_days: number | null
+          gallery_urls: Json | null
+          hero_image_url: string | null
           id: string
           includes: Json | null
           is_active: boolean | null
+          moderated_at: string | null
+          moderated_by: string | null
+          moderation_status: string | null
           price: number
           provider_id: string
+          rejection_reason: string | null
           service_type: Database["public"]["Enums"]["service_type"]
           title: string
           title_ar: string | null
@@ -1193,11 +1199,17 @@ export type Database = {
           description?: string | null
           description_ar?: string | null
           duration_days?: number | null
+          gallery_urls?: Json | null
+          hero_image_url?: string | null
           id?: string
           includes?: Json | null
           is_active?: boolean | null
+          moderated_at?: string | null
+          moderated_by?: string | null
+          moderation_status?: string | null
           price: number
           provider_id: string
+          rejection_reason?: string | null
           service_type: Database["public"]["Enums"]["service_type"]
           title: string
           title_ar?: string | null
@@ -1209,11 +1221,17 @@ export type Database = {
           description?: string | null
           description_ar?: string | null
           duration_days?: number | null
+          gallery_urls?: Json | null
+          hero_image_url?: string | null
           id?: string
           includes?: Json | null
           is_active?: boolean | null
+          moderated_at?: string | null
+          moderated_by?: string | null
+          moderation_status?: string | null
           price?: number
           provider_id?: string
+          rejection_reason?: string | null
           service_type?: Database["public"]["Enums"]["service_type"]
           title?: string
           title_ar?: string | null

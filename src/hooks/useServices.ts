@@ -1,79 +1,45 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
-import type { Tables } from '@/integrations/supabase/types';
+import * as ServicesAPI from '@/api/services/services.service';
+import type { ServiceWithProvider, ServiceFilters, Service } from '@/api/services/services.service';
+import type { ServiceType } from '@/config/constants';
 
-export type Service = Tables<'services'>;
-export type ServiceType = 'umrah' | 'hajj' | 'ziyarat';
-
-interface ServiceWithProvider extends Service {
-  provider?: {
-    id: string;
-    company_name: string | null;
-    company_name_ar: string | null;
-    rating: number | null;
-    total_reviews: number | null;
-    bio: string | null;
-    bio_ar: string | null;
-  } | null;
-}
+export type { ServiceWithProvider, Service };
+export type { ServiceType } from '@/config/constants';
 
 export function useServices(filters?: { serviceType?: ServiceType; providerId?: string }) {
   const { toast } = useToast();
-  const [services, setServices] = useState<ServiceWithProvider[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
-  const fetchServices = async () => {
-    setIsLoading(true);
-    try {
-      let query = supabase
-        .from('services')
-        .select(`
-          *,
-          provider:providers(
-            id,
-            company_name,
-            company_name_ar,
-            rating,
-            total_reviews,
-            bio,
-            bio_ar
-          )
-        `)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
+  const queryKey = ['services', filters?.serviceType, filters?.providerId];
 
-      if (filters?.serviceType) {
-        query = query.eq('service_type', filters.serviceType);
+  const { data: services = [], isLoading, refetch } = useQuery({
+    queryKey,
+    queryFn: async () => {
+      const apiFilters: ServiceFilters = {
+        serviceType: filters?.serviceType,
+        providerId: filters?.providerId,
+        isActive: true,
+      };
+      
+      const result = await ServicesAPI.getServices(apiFilters);
+      
+      if (!result.success) {
+        toast({
+          title: 'Error',
+          description: result.error?.message || 'Failed to fetch services',
+          variant: 'destructive',
+        });
+        throw new Error(result.error?.message);
       }
-
-      if (filters?.providerId) {
-        query = query.eq('provider_id', filters.providerId);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      setServices(data || []);
-    } catch (error) {
-      console.error('Error fetching services:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch services',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchServices();
-  }, [filters?.serviceType, filters?.providerId]);
+      
+      return result.data || [];
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 
   return {
     services,
     isLoading,
-    refetch: fetchServices,
+    refetch,
   };
 }
