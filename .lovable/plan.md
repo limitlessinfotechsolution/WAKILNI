@@ -1,248 +1,418 @@
 
-# WAKILNI Improvements & Enhancements Implementation Plan
-## Phase 1: Real Data Integration & Dashboard Enhancements
+# Service Creation, Backend Fetch & API Enhancements
+## Comprehensive Implementation Plan
 
 ---
 
-## Executive Summary
+## Current State Analysis
 
-This implementation plan focuses on replacing mock data with real API integrations and enhancing the dashboard experience with live statistics.
+### What's Already Implemented
 
----
+| Component | Status | Location |
+|-----------|--------|----------|
+| **Services Table** | Complete | `services` table with price, title, description, duration, includes, currency |
+| **API Service Layer** | Solid | `src/api/services/services.service.ts` with CRUD operations |
+| **Provider Hook** | Working | `src/hooks/useProviderServices.ts` for provider-specific services |
+| **Public Hook** | Working | `src/hooks/useServices.ts` for browsing |
+| **Service Form** | Basic | `src/components/provider/ServiceForm.tsx` with Zod validation |
+| **Provider Services Page** | Enhanced | `src/pages/provider/ServicesPage.tsx` with premium UI |
+| **Create Booking Edge Function** | Production-ready | Server-side price calculation, validation |
 
-## Implementation Batches
+### Gaps Identified
 
-### Batch 1: New Hooks for Real Data (6 files)
-
-**1.1 Prayer Times Hook**
-- **File**: `src/hooks/usePrayerTimes.ts`
-- **Purpose**: Integrate with Aladhan API for accurate prayer times
-- **Features**:
-  - Fetch prayer times based on user's geolocation
-  - 24-hour caching to minimize API calls
-  - Countdown timer to next prayer
-  - Fallback to Makkah times if API fails
-  - Automatic "passed" status updates
-
-**1.2 Hijri Date Hook**
-- **File**: `src/hooks/useHijriDate.ts`
-- **Purpose**: Convert Gregorian to Hijri dates via API
-- **Features**:
-  - Accurate Hijri date calculation via Aladhan API
-  - Islamic holiday detection (Eid, Ramadan, etc.)
-  - Arabic/English month names
-  - Weekday information
-  - 1-hour cache for efficiency
-
-**1.3 Qibla Direction Hook**
-- **File**: `src/hooks/useQiblaDirection.ts`
-- **Purpose**: Calculate Qibla direction with compass integration
-- **Features**:
-  - Great circle bearing calculation to Kaaba
-  - Device compass integration (where supported)
-  - iOS 13+ permission handling
-  - Relative direction calculation
-  - Cardinal direction text (N, NE, E, etc.)
-
-**1.4 Traveler Stats Hook**
-- **File**: `src/hooks/useTravelerStats.ts`
-- **Purpose**: Fetch real booking/beneficiary counts
-- **Features**:
-  - Active bookings count (accepted + in_progress)
-  - Completed bookings count
-  - Beneficiaries count
-  - Total spent calculation
-  - TanStack Query with 5-minute stale time
-
-**1.5 Provider Stats Hook**
-- **File**: `src/hooks/useProviderStats.ts`
-- **Purpose**: Fetch real provider earnings and performance
-- **Features**:
-  - Monthly/total earnings calculation
-  - Month-over-month growth percentage
-  - 12-month earnings trend for sparkline
-  - Completion rate calculation
-  - Average rating from reviews
+| Gap | Impact | Priority |
+|-----|--------|----------|
+| No "includes" field in ServiceForm | Missing package details | High |
+| No image upload for services | Visual appeal lacking | High |
+| Services hook doesn't use centralized API | Code duplication | Medium |
+| No service validation Edge Function | Relies on client-side only | Medium |
+| No bulk service operations | Admin efficiency | Low |
+| No service templates | Provider onboarding friction | Medium |
+| Missing service analytics | Business insights gap | Low |
 
 ---
 
-### Batch 2: Update TravelerWidgets with Real Data
+## Phase 1: Enhanced Service Form (High Priority)
 
-**File**: `src/components/dashboard/TravelerWidgets.tsx`
+### 1.1 Add "Includes" Field to ServiceForm
+
+**File**: `src/components/provider/ServiceForm.tsx`
 
 **Changes**:
+- Add dynamic list field for "What's Included" items
+- Support bilingual entries (English + Arabic)
+- Add/remove capability with animations
+- Common suggestions dropdown (e.g., "Transportation", "Accommodation", "Meals")
 
-1. **PrayerTimeWidget**: Replace mock data with `usePrayerTimes()` hook
-   - Show loading skeleton while fetching
-   - Display countdown to next prayer
-   - Mark passed prayers with opacity
-   - Show location name
-
-2. **HijriDateWidget**: Replace hardcoded date with `useHijriDate()` hook
-   - Show real Hijri day, month, year
-   - Display holiday name if applicable
-   - Bilingual support (Arabic/English)
-
-3. **QiblaWidget**: Implement real compass
-   - Show Qibla bearing in degrees
-   - Animate compass needle when device supported
-   - Fallback to static direction text
-   - "Tap to enable compass" button
-
----
-
-### Batch 3: Update Traveler Dashboard with Live Stats
-
-**File**: `src/pages/dashboard/TravelerDashboard.tsx`
-
-**Changes**:
-
-1. **StatCards**: Replace "0" values with real data
-   - Active bookings from `useTravelerStats()`
-   - Completed bookings count
-   - Beneficiaries count
-
-2. **Recent Bookings Section**: Show actual bookings
-   - Integrate with `useBookings()` hook
-   - Display 3 most recent bookings
-   - Link to booking detail page
-
----
-
-### Batch 4: Update Provider Dashboard with Live Stats
-
-**File**: `src/pages/dashboard/ProviderDashboard.tsx`
-
-**Changes**:
-
-1. **Earnings Card**: Replace mock earnings
-   - Real monthly earnings from `useProviderStats()`
-   - Actual growth percentage
-   - Real sparkline data from 12-month history
-
-2. **Performance Rings**: Real data
-   - Actual completion rate
-   - Real average rating
-   - True booking count
-
-3. **Today's Schedule**: Query today's bookings
-   - Filter bookings by today's date
-   - Show time-sorted list
-
----
-
-### Batch 5: Stripe Webhook Edge Function
-
-**File**: `supabase/functions/stripe-webhook/index.ts`
-
-**Purpose**: Handle Stripe payment confirmations
-
-**Flow**:
-```text
-1. Verify Stripe signature
-2. Parse event type (payment_intent.succeeded, etc.)
-3. Find booking by payment_intent_id
-4. Update transaction status to 'completed'
-5. Update booking status to 'accepted'
-6. Create notification for traveler
-7. Log to audit_logs
+```typescript
+// Schema addition
+includes: z.array(z.object({
+  en: z.string().min(1),
+  ar: z.string().optional(),
+})).optional(),
 ```
 
-**Required Secrets**: `STRIPE_WEBHOOK_SECRET`
+**UI Components**:
+- Dynamic list with add/remove buttons
+- Pre-defined suggestions as chips
+- Character counter per item
+
+### 1.2 Service Image Upload
+
+**New Component**: `src/components/provider/ServiceImageUpload.tsx`
+
+**Features**:
+- Upload hero image for service
+- Optional gallery (up to 4 images)
+- Drag-and-drop support
+- Image preview with crop
+- Compression before upload
+- Store in `service-images` storage bucket
+
+**Database Migration**:
+```sql
+ALTER TABLE services 
+ADD COLUMN IF NOT EXISTS hero_image_url text,
+ADD COLUMN IF NOT EXISTS gallery_urls jsonb DEFAULT '[]'::jsonb;
+```
+
+**Storage Bucket**:
+```sql
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('service-images', 'service-images', true);
+```
 
 ---
 
-### Batch 6: Test Coverage
+## Phase 2: Refactor Hooks to Use Centralized API
 
-**File**: `src/tests/api/services.test.ts`
+### 2.1 Update useProviderServices Hook
 
-Add tests for:
-- Prayer times API caching
-- Stats calculation accuracy
-- Qibla direction math
+**File**: `src/hooks/useProviderServices.ts`
+
+**Changes**:
+- Import from `@/api/services/services.service`
+- Use TanStack Query instead of raw useState/useEffect
+- Leverage centralized error handling
+- Add optimistic updates
+
+```typescript
+// Before: Direct Supabase calls
+const { data, error } = await supabase.from('services')...
+
+// After: Centralized API
+const result = await ServicesAPI.getProviderServices(providerId, true);
+```
+
+### 2.2 Update useServices Hook
+
+**File**: `src/hooks/useServices.ts`
+
+**Changes**:
+- Use `ServicesAPI.getServices()` instead of direct Supabase
+- Add proper typing from API layer
+- Use TanStack Query with cache invalidation
+- Support advanced filters
+
+### 2.3 Create Unified Services Module
+
+**File**: `src/modules/services/index.ts` (update existing)
+
+**Exports**:
+```typescript
+export { useServices } from '@/hooks/useServices';
+export { useProviderServices } from '@/hooks/useProviderServices';
+export { useServiceById } from '@/hooks/useServiceById';
+export * as ServicesAPI from '@/api/services/services.service';
+export { ServiceForm } from '@/components/provider/ServiceForm';
+export { ServiceCard } from '@/components/services/ServiceCard';
+```
+
+---
+
+## Phase 3: Service Validation Schema
+
+### 3.1 Centralized Service Schema
+
+**File**: `src/api/schemas/service.schema.ts`
+
+```typescript
+export const ServiceCreateSchema = z.object({
+  title: z.string().min(3).max(100),
+  title_ar: z.string().max(100).optional(),
+  description: z.string().min(20).max(2000),
+  description_ar: z.string().max(2000).optional(),
+  service_type: z.enum(['umrah', 'hajj', 'ziyarat']),
+  price: z.number().min(1).max(1000000),
+  currency: z.enum(['SAR', 'USD', 'EUR', 'GBP']).default('SAR'),
+  duration_days: z.number().min(1).max(365).optional(),
+  includes: z.array(z.object({
+    en: z.string(),
+    ar: z.string().optional(),
+  })).optional(),
+  is_active: z.boolean().default(true),
+});
+
+export const ServiceUpdateSchema = ServiceCreateSchema.partial();
+```
+
+### 3.2 Edge Function for Service CRUD
+
+**File**: `supabase/functions/manage-service/index.ts`
+
+**Purpose**: Server-side validation for service creation/updates
+
+**Operations**:
+- `POST /manage-service` - Create service (validates provider KYC status)
+- `PUT /manage-service/:id` - Update service (validates ownership)
+- `DELETE /manage-service/:id` - Soft delete (checks for active bookings)
+
+**Security**:
+- Verify provider owns the service
+- Check KYC is approved before allowing creation
+- Prevent deletion if active bookings exist
+- Audit log all changes
+
+---
+
+## Phase 4: Enhanced Service Card Component
+
+### 4.1 Reusable ServiceCard Component
+
+**File**: `src/components/services/ServiceCard.tsx`
+
+**Features**:
+- Hero image with fallback gradient
+- Provider avatar and rating
+- Price formatting with currency
+- Duration badge
+- Service type indicator
+- "Includes" preview (first 3 items)
+- Quick book button
+- Wishlist toggle
+- Compare checkbox
+
+**Variants**:
+- `grid` - For services browsing page
+- `compact` - For dashboard widgets
+- `detailed` - For provider management
+
+### 4.2 Service Detail Dialog
+
+**File**: `src/components/services/ServiceDetailDialog.tsx`
+
+**Features**:
+- Full gallery viewer
+- Complete "includes" list
+- Provider profile preview
+- Recent reviews for this service
+- Book now CTA
+- Share button
+
+---
+
+## Phase 5: Service Templates (Provider Onboarding)
+
+### 5.1 Pre-defined Templates
+
+**File**: `src/config/service-templates.ts`
+
+```typescript
+export const SERVICE_TEMPLATES = {
+  umrah_basic: {
+    title: 'Basic Umrah Package',
+    title_ar: 'باقة العمرة الأساسية',
+    description: 'Complete Umrah ritual performed on your behalf...',
+    service_type: 'umrah',
+    duration_days: 1,
+    includes: [
+      { en: 'Complete Tawaf', ar: 'طواف كامل' },
+      { en: 'Sa\'i between Safa and Marwa', ar: 'سعي بين الصفا والمروة' },
+      { en: 'Ihram from Miqat', ar: 'إحرام من الميقات' },
+      { en: 'Dua for beneficiary', ar: 'دعاء للمستفيد' },
+      { en: 'Photo/Video proof', ar: 'إثبات بالصور والفيديو' },
+    ],
+    suggested_price: 500,
+  },
+  // ... more templates
+};
+```
+
+### 5.2 Template Selection UI
+
+**Component**: `src/components/provider/ServiceTemplateSelector.tsx`
+
+**Flow**:
+1. Provider clicks "Add Service"
+2. Shows template selector modal
+3. Provider picks template or "Start from scratch"
+4. Form pre-fills with template data
+5. Provider customizes and saves
+
+---
+
+## Phase 6: Admin Service Management
+
+### 6.1 Admin Services Overview Page
+
+**File**: `src/pages/admin/ServicesManagementPage.tsx`
+
+**Features**:
+- All services across all providers
+- Filter by type, status, provider, price range
+- Bulk approve/reject (for future moderation)
+- Service analytics summary
+- Flag inappropriate services
+- Export to CSV
+
+### 6.2 Service Moderation Queue
+
+**Table Addition**:
+```sql
+ALTER TABLE services 
+ADD COLUMN IF NOT EXISTS moderation_status text DEFAULT 'pending',
+ADD COLUMN IF NOT EXISTS moderated_by uuid REFERENCES auth.users(id),
+ADD COLUMN IF NOT EXISTS moderated_at timestamptz,
+ADD COLUMN IF NOT EXISTS rejection_reason text;
+```
+
+**Workflow**:
+1. Provider creates service (status: pending)
+2. Admin reviews in moderation queue
+3. Admin approves or rejects with reason
+4. Service becomes visible (if approved)
+
+---
+
+## Phase 7: API Response Standardization
+
+### 7.1 Update All Service Endpoints
+
+Ensure all service-related API calls return:
+
+```typescript
+{
+  success: boolean,
+  data: Service | Service[] | null,
+  error: {
+    code: 'SERVICE_001' | 'SERVICE_002' | ...,
+    message: string,
+    details?: string,
+  } | null,
+  meta: {
+    timestamp: string,
+    version: '2026-02-01',
+    count?: number,
+    page?: number,
+  }
+}
+```
+
+### 7.2 Service-Specific Error Codes
+
+**File**: `src/api/errors.ts` (update)
+
+```typescript
+export const SERVICE_ERRORS = {
+  SERVICE_001: { status: 404, message: 'Service not found' },
+  SERVICE_002: { status: 400, message: 'Service is inactive' },
+  SERVICE_003: { status: 403, message: 'Not authorized to modify this service' },
+  SERVICE_004: { status: 400, message: 'Cannot delete service with active bookings' },
+  SERVICE_005: { status: 400, message: 'Provider KYC not approved' },
+  SERVICE_006: { status: 400, message: 'Invalid service data' },
+};
+```
 
 ---
 
 ## Files to Create
 
 ```text
-src/hooks/usePrayerTimes.ts      # Prayer times from Aladhan API
-src/hooks/useHijriDate.ts        # Hijri date conversion
-src/hooks/useQiblaDirection.ts   # Qibla compass direction
-src/hooks/useTravelerStats.ts    # Real traveler statistics
-src/hooks/useProviderStats.ts    # Real provider statistics
-supabase/functions/stripe-webhook/index.ts  # Payment webhook
+New Files:
+  src/components/provider/ServiceImageUpload.tsx
+  src/components/provider/ServiceTemplateSelector.tsx
+  src/components/services/ServiceCard.tsx
+  src/components/services/ServiceDetailDialog.tsx
+  src/api/schemas/service.schema.ts
+  src/config/service-templates.ts
+  src/hooks/useServiceById.ts
+  src/pages/admin/ServicesManagementPage.tsx
+  supabase/functions/manage-service/index.ts
 ```
 
 ## Files to Modify
 
 ```text
-src/components/dashboard/TravelerWidgets.tsx  # Use real prayer/Hijri data
-src/pages/dashboard/TravelerDashboard.tsx     # Use real stats
-src/pages/dashboard/ProviderDashboard.tsx     # Use real earnings
-src/tests/api/services.test.ts                # Add hook tests
+Modified Files:
+  src/components/provider/ServiceForm.tsx (add includes, images)
+  src/hooks/useProviderServices.ts (use centralized API)
+  src/hooks/useServices.ts (use centralized API, TanStack Query)
+  src/modules/services/index.ts (add new exports)
+  src/api/errors.ts (add service error codes)
+  src/api/index.ts (export service schemas)
 ```
 
 ---
 
-## Technical Implementation Details
+## Database Migrations
 
-### Prayer Times API Integration
+### Migration 1: Service Enhancements
+```sql
+ALTER TABLE services 
+ADD COLUMN IF NOT EXISTS hero_image_url text,
+ADD COLUMN IF NOT EXISTS gallery_urls jsonb DEFAULT '[]'::jsonb,
+ADD COLUMN IF NOT EXISTS moderation_status text DEFAULT 'approved',
+ADD COLUMN IF NOT EXISTS moderated_by uuid,
+ADD COLUMN IF NOT EXISTS moderated_at timestamptz,
+ADD COLUMN IF NOT EXISTS rejection_reason text;
+```
 
-```typescript
-// API Call
-const response = await fetch(
-  `https://api.aladhan.com/v1/timings/${dateStr}?latitude=${lat}&longitude=${lng}&method=4`
+### Migration 2: Service Images Storage Bucket
+```sql
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('service-images', 'service-images', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- RLS Policy for service images
+CREATE POLICY "Providers can upload service images"
+ON storage.objects FOR INSERT
+WITH CHECK (
+  bucket_id = 'service-images' 
+  AND auth.role() = 'authenticated'
 );
 
-// Caching Strategy
-localStorage.setItem('wakilni_prayer_times', JSON.stringify({
-  data: timings,
-  timestamp: Date.now(),
-  location: { lat, lng },
-}));
-```
-
-### Stats Calculation
-
-```typescript
-// Traveler Stats Query
-const { count: activeBookings } = await supabase
-  .from('bookings')
-  .select('id', { count: 'exact', head: true })
-  .eq('traveler_id', user.id)
-  .in('status', ['accepted', 'in_progress']);
-```
-
-### Qibla Calculation
-
-```typescript
-// Great Circle Bearing Formula
-const y = Math.sin(dLng);
-const x = Math.cos(lat1) * Math.tan(lat2) - Math.sin(lat1) * Math.cos(dLng);
-const bearing = Math.atan2(y, x) * (180 / Math.PI);
+CREATE POLICY "Anyone can view service images"
+ON storage.objects FOR SELECT
+USING (bucket_id = 'service-images');
 ```
 
 ---
 
-## Implementation Order
+## Implementation Priority
 
-1. Create new hooks (usePrayerTimes, useHijriDate, useQiblaDirection)
-2. Create stats hooks (useTravelerStats, useProviderStats)
-3. Update TravelerWidgets to use new hooks
-4. Update TravelerDashboard with live stats
-5. Update ProviderDashboard with real earnings
-6. Create Stripe webhook handler
-7. Add tests
+| Phase | Task | Priority | Effort |
+|-------|------|----------|--------|
+| 1 | Enhanced ServiceForm with includes | P1 | 3 hrs |
+| 1 | Service image upload | P1 | 4 hrs |
+| 2 | Refactor useProviderServices | P2 | 2 hrs |
+| 2 | Refactor useServices | P2 | 2 hrs |
+| 3 | Service validation schema | P2 | 1 hr |
+| 3 | manage-service Edge Function | P2 | 4 hrs |
+| 4 | ServiceCard component | P1 | 3 hrs |
+| 4 | ServiceDetailDialog | P2 | 2 hrs |
+| 5 | Service templates | P3 | 3 hrs |
+| 6 | Admin services page | P3 | 4 hrs |
+| 7 | API standardization | P2 | 2 hrs |
 
 ---
 
-## Success Criteria
+## Success Metrics
 
-- Prayer times show accurate times for user's location
-- Hijri date is accurate and shows holidays
-- Qibla compass animates with device orientation
-- Dashboard stats reflect actual database counts
-- Provider earnings show real transaction amounts
-- Stripe webhook processes payment confirmations
-- All existing tests continue to pass
+After implementation:
+- Providers can add rich service descriptions with "includes" list
+- Service images display in browsing and detail views
+- All service hooks use centralized API layer
+- Server-side validation for all service mutations
+- Admin can moderate and manage services across providers
+- Reusable ServiceCard component used consistently
+- Service templates reduce provider onboarding time
