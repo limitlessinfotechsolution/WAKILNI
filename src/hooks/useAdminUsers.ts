@@ -33,7 +33,7 @@ export function useAdminUsers(roleFilter: RoleFilter = 'all') {
         .from('user_roles')
         .select(`
           *,
-          profile:profiles(
+          profile:profiles!inner(
             full_name,
             full_name_ar,
             phone,

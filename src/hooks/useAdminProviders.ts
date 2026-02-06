@@ -28,7 +28,7 @@ export function useAdminProviders(kycFilter?: KycStatus) {
         .from('providers')
         .select(`
           *,
-          profile:profiles!providers_user_id_fkey(
+          profile:profiles(
             full_name,
             full_name_ar,
             phone,

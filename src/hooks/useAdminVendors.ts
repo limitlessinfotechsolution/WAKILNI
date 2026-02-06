@@ -44,7 +44,7 @@ export function useAdminVendors(kycFilter?: KycStatus) {
         .from('vendors')
         .select(`
           *,
-          profile:profiles!vendors_user_id_fkey(
+          profile:profiles(
             full_name,
             full_name_ar,
             phone
