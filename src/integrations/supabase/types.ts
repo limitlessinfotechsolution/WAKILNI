@@ -747,6 +747,10 @@ export type Database = {
           full_name: string | null
           full_name_ar: string | null
           id: string
+          last_login_at: string | null
+          last_login_device: string | null
+          last_login_ip: string | null
+          last_login_location: string | null
           phone: string | null
           phone_verified: boolean | null
           preferred_language: string | null
@@ -759,6 +763,10 @@ export type Database = {
           full_name?: string | null
           full_name_ar?: string | null
           id?: string
+          last_login_at?: string | null
+          last_login_device?: string | null
+          last_login_ip?: string | null
+          last_login_location?: string | null
           phone?: string | null
           phone_verified?: boolean | null
           preferred_language?: string | null
@@ -771,6 +779,10 @@ export type Database = {
           full_name?: string | null
           full_name_ar?: string | null
           id?: string
+          last_login_at?: string | null
+          last_login_device?: string | null
+          last_login_ip?: string | null
+          last_login_location?: string | null
           phone?: string | null
           phone_verified?: boolean | null
           preferred_language?: string | null
@@ -1434,6 +1446,51 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_sessions: {
+        Row: {
+          browser: string | null
+          city: string | null
+          country: string | null
+          device_type: string | null
+          id: string
+          ip_address: string | null
+          is_current: boolean | null
+          logged_in_at: string
+          logged_out_at: string | null
+          os: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          device_type?: string | null
+          id?: string
+          ip_address?: string | null
+          is_current?: boolean | null
+          logged_in_at?: string
+          logged_out_at?: string | null
+          os?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          device_type?: string | null
+          id?: string
+          ip_address?: string | null
+          is_current?: boolean | null
+          logged_in_at?: string
+          logged_out_at?: string | null
+          os?: string | null
+          user_agent?: string | null
           user_id?: string
         }
         Relationships: []

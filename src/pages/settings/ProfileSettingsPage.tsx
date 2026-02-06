@@ -28,6 +28,7 @@ import { useOfflineSync } from '@/hooks/useOfflineSync';
 import { useHaptics } from '@/hooks/useHaptics';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { useArabicNameSuggestion } from '@/hooks/useArabicNameSuggestion';
 import { ConfirmDialog } from '@/components/feedback';
 
 const profileSchema = z.object({
@@ -61,12 +62,16 @@ interface NotificationPreferences {
   push_system: boolean;
 }
 
-// Mock active sessions data
-const MOCK_SESSIONS = [
-  { id: '1', device: 'Chrome on Windows', location: 'Riyadh, SA', lastActive: 'Now', current: true },
-  { id: '2', device: 'Safari on iPhone', location: 'Jeddah, SA', lastActive: '2 hours ago', current: false },
-  { id: '3', device: 'Firefox on macOS', location: 'Dubai, AE', lastActive: '1 day ago', current: false },
-];
+// Real sessions from database
+interface SessionRecord {
+  id: string;
+  device_type: string;
+  browser: string;
+  os: string;
+  city: string | null;
+  logged_in_at: string;
+  is_current: boolean;
+}
 
 export default function ProfileSettingsPage() {
   const { t, isRTL, language, setLanguage } = useLanguage();
@@ -83,7 +88,8 @@ export default function ProfileSettingsPage() {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isExportingData, setIsExportingData] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [sessions, setSessions] = useState(MOCK_SESSIONS);
+  const [sessions, setSessions] = useState<SessionRecord[]>([]);
+  const { suggestion: arabicSuggestion, suggestArabicName } = useArabicNameSuggestion();
   const [notificationPrefs, setNotificationPrefs] = useState<NotificationPreferences>({
     email_bookings: true,
     email_kyc: true,
@@ -124,6 +130,21 @@ export default function ProfileSettingsPage() {
       setAvatarUrl(profile.avatar_url);
     }
   }, [profile, form]);
+
+  // Fetch real sessions
+  useEffect(() => {
+    if (!user) return;
+    const fetchSessions = async () => {
+      const { data } = await supabase
+        .from('user_sessions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('logged_in_at', { ascending: false })
+        .limit(10);
+      if (data) setSessions(data as SessionRecord[]);
+    };
+    fetchSessions();
+  }, [user]);
 
   const handleEnablePush = async () => {
     if (!pushSupported) {
@@ -441,7 +462,17 @@ export default function ProfileSettingsPage() {
                         <FormItem>
                           <FormLabel>{isRTL ? 'الاسم الكامل (بالإنجليزية)' : 'Full Name (English)'}</FormLabel>
                           <FormControl>
-                            <Input placeholder="John Doe" {...field} />
+                            <Input 
+                              placeholder="John Doe" 
+                              {...field} 
+                              onChange={(e) => {
+                                field.onChange(e);
+                                const suggested = suggestArabicName(e.target.value);
+                                if (suggested && !form.getValues('full_name_ar')) {
+                                  form.setValue('full_name_ar', suggested);
+                                }
+                              }}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -909,30 +940,40 @@ export default function ProfileSettingsPage() {
                 </div>
               </GlassCardHeader>
               <GlassCardContent className="space-y-3">
-                {sessions.map((session) => (
-                  <div 
-                    key={session.id}
-                    className={cn(
-                      'flex items-center justify-between p-3 rounded-lg border',
-                      session.current && 'bg-primary/5 border-primary/20'
-                    )}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Monitor className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <p className="font-medium text-sm">{session.device}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {session.location} • {session.lastActive}
-                        </p>
+                {sessions.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    {isRTL ? 'لا توجد جلسات مسجلة' : 'No sessions recorded yet'}
+                  </p>
+                ) : sessions.map((session) => {
+                  const timeAgo = new Date(session.logged_in_at).toLocaleDateString(undefined, {
+                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                  });
+                  return (
+                    <div 
+                      key={session.id}
+                      className={cn(
+                        'flex items-center justify-between p-3 rounded-lg border',
+                        session.is_current && 'bg-primary/5 border-primary/20'
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Monitor className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                          <p className="font-medium text-sm">{session.browser} on {session.os}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {session.city || 'Unknown'} • {timeAgo}
+                          </p>
+                        </div>
                       </div>
+                      {session.is_current && (
+                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
+                          {isRTL ? 'الحالي' : 'Current'}
+                        </Badge>
+                      )}
                     </div>
-                    {session.current && (
-                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
-                        {isRTL ? 'الحالي' : 'Current'}
-                      </Badge>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
+
               </GlassCardContent>
             </GlassCard>
 

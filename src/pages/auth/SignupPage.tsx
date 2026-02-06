@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { cn } from '@/lib/utils';
+import { useArabicNameSuggestion } from '@/hooks/useArabicNameSuggestion';
 import wakilniLogo from '@/assets/wakilni-logo.jpg';
 
 type RoleType = 'traveler' | 'provider' | 'vendor';
@@ -78,7 +79,7 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
-
+  const { suggestion: arabicNameSuggestion, suggestArabicName } = useArabicNameSuggestion();
   const [formData, setFormData] = useState<FormData>({
     email: '',
     password: '',
@@ -105,6 +106,14 @@ export default function SignupPage() {
 
   const updateForm = (field: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    // Auto-suggest Arabic name when English name changes
+    if (field === 'fullName') {
+      const suggested = suggestArabicName(value);
+      if (suggested && !formData.fullNameAr) {
+        setFormData(prev => ({ ...prev, [field]: value, fullNameAr: suggested }));
+        return;
+      }
+    }
   };
 
   const handleRoleSelect = (role: RoleType) => {
@@ -398,9 +407,18 @@ export default function SignupPage() {
                         value={formData.fullNameAr}
                         onChange={(e) => updateForm('fullNameAr', e.target.value)}
                         className="h-11 rounded-xl"
-                        placeholder="الاسم الكامل"
+                        placeholder={isRTL ? 'الاسم الكامل' : 'Arabic name (auto-suggested)'}
                         dir="rtl"
                       />
+                      {arabicNameSuggestion && !formData.fullNameAr && (
+                        <button
+                          type="button"
+                          onClick={() => updateForm('fullNameAr', arabicNameSuggestion)}
+                          className="text-xs text-primary hover:underline"
+                        >
+                          {isRTL ? 'اقتراح: ' : 'Suggestion: '}{arabicNameSuggestion}
+                        </button>
+                      )}
                     </div>
                   </div>
 

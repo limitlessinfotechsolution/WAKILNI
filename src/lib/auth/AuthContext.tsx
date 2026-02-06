@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -100,6 +100,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  const loginTrackedRef = useRef(false);
+
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -110,7 +112,51 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (currentSession?.user) {
           // Use setTimeout to avoid potential deadlock
           setTimeout(() => fetchProfile(currentSession.user.id), 0);
+          
+          // Track login on SIGNED_IN event
+          if (event === 'SIGNED_IN' && !loginTrackedRef.current) {
+            loginTrackedRef.current = true;
+            setTimeout(async () => {
+              try {
+                const ua = navigator.userAgent;
+                let browser = 'Unknown', os = 'Unknown', deviceType = 'desktop';
+                if (ua.includes('Firefox/')) browser = 'Firefox';
+                else if (ua.includes('Edg/')) browser = 'Edge';
+                else if (ua.includes('Chrome/')) browser = 'Chrome';
+                else if (ua.includes('Safari/') && !ua.includes('Chrome')) browser = 'Safari';
+                if (ua.includes('Windows')) os = 'Windows';
+                else if (ua.includes('Mac OS')) os = 'macOS';
+                else if (ua.includes('Android')) os = 'Android';
+                else if (ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS';
+                else if (ua.includes('Linux')) os = 'Linux';
+                if (ua.includes('Mobile') || ua.includes('Android') || ua.includes('iPhone')) deviceType = 'mobile';
+                else if (ua.includes('iPad') || ua.includes('Tablet')) deviceType = 'tablet';
+                
+                const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                const city = tz.split('/').pop()?.replace(/_/g, ' ') || '';
+
+                await supabase.from('user_sessions').insert({
+                  user_id: currentSession.user.id,
+                  user_agent: ua,
+                  device_type: deviceType,
+                  browser,
+                  os,
+                  city,
+                  is_current: true,
+                });
+
+                await supabase.from('profiles').update({
+                  last_login_at: new Date().toISOString(),
+                  last_login_device: `${browser} on ${os}`,
+                  last_login_location: city,
+                }).eq('user_id', currentSession.user.id);
+              } catch (e) {
+                console.error('Login tracking error:', e);
+              }
+            }, 100);
+          }
         } else {
+          loginTrackedRef.current = false;
           setProfile(null);
           setRole(null);
         }
