@@ -300,12 +300,9 @@ export function EnhancedHeader({ showNav = true }: EnhancedHeaderProps) {
                       <span className="text-sm font-semibold leading-tight">
                         {profile?.full_name?.split(' ')[0] || 'User'}
                       </span>
-                      <Badge className={cn(
-                        'text-[9px] px-1.5 py-0 h-4 font-medium border-0 text-white',
-                        `bg-gradient-to-r ${currentRole.gradient}`
-                      )}>
-                        {isRTL ? currentRole.labelAr : currentRole.label}
-                      </Badge>
+                      <span className="text-[10px] font-mono font-bold text-primary/70 tracking-wide leading-none">
+                        {profile?.display_id || ''}
+                      </span>
                     </div>
                     <ChevronDown className="h-3.5 w-3.5 text-muted-foreground hidden md:block" />
                   </Button>
@@ -326,12 +323,19 @@ export function EnhancedHeader({ showNav = true }: EnhancedHeaderProps) {
                       <div className="flex-1 min-w-0">
                         <p className="font-bold truncate">{profile?.full_name || 'User'}</p>
                         <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                        <Badge className={cn(
-                          'mt-1 text-[9px] px-1.5 py-0 h-4 font-medium border-0 text-white',
-                          `bg-gradient-to-r ${currentRole.gradient}`
-                        )}>
-                          {isRTL ? currentRole.labelAr : currentRole.label}
-                        </Badge>
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <Badge className={cn(
+                            'text-[9px] px-1.5 py-0 h-4 font-medium border-0 text-white',
+                            `bg-gradient-to-r ${currentRole.gradient}`
+                          )}>
+                            {isRTL ? currentRole.labelAr : currentRole.label}
+                          </Badge>
+                          {profile?.display_id && (
+                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 font-mono font-bold">
+                              {profile.display_id}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>

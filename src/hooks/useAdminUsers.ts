@@ -16,6 +16,7 @@ interface UserWithRole {
     full_name_ar: string | null;
     phone: string | null;
     avatar_url: string | null;
+    display_id: string | null;
   } | null;
 }
 
@@ -37,7 +38,8 @@ export function useAdminUsers(roleFilter: RoleFilter = 'all') {
             full_name,
             full_name_ar,
             phone,
-            avatar_url
+            avatar_url,
+            display_id
           )
         `)
         .order('created_at', { ascending: false });

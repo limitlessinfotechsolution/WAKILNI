@@ -304,6 +304,7 @@ export default function UsersManagementPage() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>{isRTL ? 'المستخدم' : 'User'}</TableHead>
+                        <TableHead>{isRTL ? 'المعرّف' : 'ID'}</TableHead>
                         <TableHead>{isRTL ? 'الهاتف' : 'Phone'}</TableHead>
                         <TableHead>{isRTL ? 'الدور' : 'Role'}</TableHead>
                         <TableHead>{isRTL ? 'تاريخ التسجيل' : 'Joined'}</TableHead>
@@ -332,6 +333,11 @@ export default function UsersManagementPage() {
                                 )}
                               </div>
                             </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className="font-mono text-xs font-bold text-primary/80">
+                              {user.profile?.display_id || '-'}
+                            </span>
                           </TableCell>
                           <TableCell className="font-mono text-sm">{user.profile?.phone || '-'}</TableCell>
                           <TableCell>{getRoleBadge(user.role)}</TableCell>
