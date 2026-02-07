@@ -50,7 +50,9 @@ import InstallPage from "./pages/pwa/InstallPage";
 import CertificateVerificationPage from "./pages/verify/CertificateVerificationPage";
 import ScholarVerificationPage from "./pages/admin/ScholarVerificationPage";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { retry: 1 } },
+});
 
 // Auto theme sync wrapper
 function AutoThemeSyncWrapper({ children }: { children: React.ReactNode }) {
