@@ -13,6 +13,7 @@ interface Profile {
   phone_verified: boolean;
   avatar_url: string | null;
   preferred_language: 'en' | 'ar';
+  display_id: string | null;
 }
 
 interface AuthContextType {

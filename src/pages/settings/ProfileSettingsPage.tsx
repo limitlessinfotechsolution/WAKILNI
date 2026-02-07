@@ -442,6 +442,27 @@ export default function ProfileSettingsPage() {
               </GlassCardContent>
             </GlassCard>
 
+            {/* Display ID */}
+            {profile?.display_id && (
+              <GlassCard glow hoverable>
+                <GlassCardContent className="py-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        {isRTL ? 'معرّف الحساب' : 'Account ID'}
+                      </p>
+                      <p className="text-2xl font-mono font-bold tracking-wider text-primary">
+                        {profile.display_id}
+                      </p>
+                    </div>
+                    <Badge variant="outline" className="text-xs font-mono">
+                      {isRTL ? 'للقراءة فقط' : 'Read-only'}
+                    </Badge>
+                  </div>
+                </GlassCardContent>
+              </GlassCard>
+            )}
+
             {/* Personal Information */}
             <GlassCard glow hoverable>
               <GlassCardHeader>

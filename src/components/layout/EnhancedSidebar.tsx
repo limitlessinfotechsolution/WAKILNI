@@ -499,6 +499,11 @@ export function EnhancedSidebar() {
               <p className="text-sm font-semibold truncate">
                 {profile?.full_name || 'User'}
               </p>
+              {profile?.display_id && (
+                <p className="text-[10px] font-mono font-bold text-primary/80 tracking-wide">
+                  {profile.display_id}
+                </p>
+              )}
               <p className="text-xs text-muted-foreground truncate">
                 {isRTL ? currentRole.labelAr : currentRole.label}
               </p>
