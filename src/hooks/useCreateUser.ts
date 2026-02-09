@@ -22,45 +22,37 @@ export function useCreateUser() {
   const createUser = async (userData: CreateUserData): Promise<boolean> => {
     setIsLoading(true);
     try {
-      // Create user with Supabase auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: userData.email,
-        password: userData.password,
-        options: {
-          data: {
-            full_name: userData.fullName,
-            full_name_ar: userData.fullNameAr,
-            role: userData.role,
-          },
+      // Call the edge function instead of signUp to avoid logging out the admin
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+
+      if (!token) throw new Error('Not authenticated');
+
+      const response = await supabase.functions.invoke('create-user-admin', {
+        body: {
+          email: userData.email,
+          password: userData.password,
+          fullName: userData.fullName,
+          fullNameAr: userData.fullNameAr,
+          phone: userData.phone,
+          role: userData.role,
         },
       });
 
-      if (authError) throw authError;
-
-      if (!authData.user) {
-        throw new Error('User creation failed');
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to create user');
       }
 
-      // Update profile with additional data if provided
-      if (userData.phone || userData.fullNameAr) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({
-            phone: userData.phone || null,
-            full_name_ar: userData.fullNameAr || null,
-          })
-          .eq('user_id', authData.user.id);
-
-        if (profileError) {
-          console.error('Error updating profile:', profileError);
-        }
+      const result = response.data;
+      if (!result?.success) {
+        throw new Error(result?.error || 'Failed to create user');
       }
 
       // Log audit action
       await logAuditAction({
         action: userData.role === 'admin' || userData.role === 'super_admin' ? 'admin_created' : 'user_created',
         entityType: 'user',
-        entityId: authData.user.id,
+        entityId: result.user?.id,
         newValues: { 
           email: userData.email, 
           full_name: userData.fullName,
