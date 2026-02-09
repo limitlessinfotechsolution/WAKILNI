@@ -260,12 +260,40 @@ export default function ProfileSettingsPage() {
   };
 
   const handleSignOutAllSessions = async () => {
+    if (!user) return;
     haptics.warning();
-    setSessions([sessions[0]]);
-    toast({
-      title: isRTL ? 'تم تسجيل الخروج' : 'Signed Out',
-      description: isRTL ? 'تم تسجيل الخروج من جميع الأجهزة الأخرى' : 'Signed out from all other devices.',
-    });
+    try {
+      // Mark all other sessions as logged out in the database
+      const { error } = await supabase
+        .from('user_sessions')
+        .update({ is_current: false, logged_out_at: new Date().toISOString() })
+        .eq('user_id', user.id)
+        .neq('id', sessions.find(s => s.is_current)?.id || '');
+
+      if (error) throw error;
+
+      // Refresh sessions list
+      const { data } = await supabase
+        .from('user_sessions')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_current', true)
+        .order('logged_in_at', { ascending: false })
+        .limit(10);
+      if (data) setSessions(data as SessionRecord[]);
+
+      toast({
+        title: isRTL ? 'تم تسجيل الخروج' : 'Signed Out',
+        description: isRTL ? 'تم تسجيل الخروج من جميع الأجهزة الأخرى' : 'Signed out from all other devices.',
+      });
+    } catch (error) {
+      console.error('Error terminating sessions:', error);
+      toast({
+        title: isRTL ? 'خطأ' : 'Error',
+        description: isRTL ? 'فشل في تسجيل الخروج من الأجهزة الأخرى' : 'Failed to sign out other devices.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleDeleteAccount = async () => {
