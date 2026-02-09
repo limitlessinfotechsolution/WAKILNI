@@ -1,80 +1,69 @@
 
 
-# Unique Display IDs Implementation Plan
+# Fix: Database Error on Account Creation
 
-## Overview
+## Problem
 
-Add human-readable, role-based unique IDs to every user across the platform. These IDs will be auto-generated on account creation and displayed throughout the UI.
+The `generate_display_id()` trigger function uses `FOR UPDATE` with `count(*)` (an aggregate function), which PostgreSQL does not allow. This causes every signup to fail with:
 
-### ID Format
+```
+ERROR: FOR UPDATE is not allowed with aggregate functions
+```
 
-| Role | Prefix | Example |
-|------|--------|---------|
-| Traveler (User) | WKIU | WKIU00001 |
-| Provider | WKIP | WKIP00001 |
-| Vendor | WKIV | WKIV00001 |
-| Admin | WKIA | WKIA00001 |
-| Super Admin | WAKISU | WAKISU001 |
+## Solution
 
-Each prefix has its own independent counter, so the first provider is WKIP00001 regardless of how many travelers exist.
+Replace the `FOR UPDATE` locking with a simple `count(*)` query. To prevent race conditions, we can use an `ADVISORY LOCK` instead.
 
----
+### Database Migration
 
-## Technical Approach
-
-### 1. Database Changes
-
-**Add `display_id` column to `profiles` table:**
+Update the `generate_display_id()` function:
 
 ```sql
-ALTER TABLE profiles ADD COLUMN display_id text UNIQUE;
+CREATE OR REPLACE FUNCTION public.generate_display_id()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  _prefix text;
+  _pad_length int;
+  _next_num int;
+  _display_id text;
+BEGIN
+  _prefix := CASE NEW.role
+    WHEN 'traveler' THEN 'WKIU'
+    WHEN 'provider' THEN 'WKIP'
+    WHEN 'vendor' THEN 'WKIV'
+    WHEN 'admin' THEN 'WKIA'
+    WHEN 'super_admin' THEN 'WAKISU'
+    ELSE 'WKIU'
+  END;
+
+  _pad_length := CASE WHEN NEW.role = 'super_admin' THEN 3 ELSE 5 END;
+
+  -- Use advisory lock to prevent race conditions (hash the prefix)
+  PERFORM pg_advisory_xact_lock(hashtext(_prefix));
+
+  -- Count existing profiles with same prefix (no FOR UPDATE needed)
+  SELECT count(*) + 1 INTO _next_num
+  FROM public.profiles
+  WHERE display_id LIKE _prefix || '%';
+
+  _display_id := _prefix || lpad(_next_num::text, _pad_length, '0');
+
+  UPDATE public.profiles
+  SET display_id = _display_id
+  WHERE user_id = NEW.user_id;
+
+  RETURN NEW;
+END;
+$$;
 ```
 
-**Create a function to auto-generate IDs on profile creation:**
+**Key change**: Removed `FOR UPDATE` from the aggregate query and replaced it with `pg_advisory_xact_lock` for safe concurrency handling. Advisory locks are transaction-scoped and work perfectly with aggregate functions.
 
-The function will:
-- Look up the user's role from `user_roles`
-- Count existing profiles with the same prefix
-- Generate the next sequential ID (zero-padded to 5 digits, or 3 for Super Admin)
+### Files Changed
 
-**Create a trigger** that fires after a row is inserted into `user_roles`, updating the corresponding profile's `display_id`. This ensures the ID is set once the role is assigned.
-
-### 2. Backfill Existing Users
-
-A one-time migration query will assign `display_id` to all 9 existing users based on their current roles, ordered by `created_at` so early users get lower numbers.
-
-### 3. Frontend Display
-
-Update these areas to show the display ID:
-
-- **Profile Settings Page** -- Show ID as a read-only badge
-- **Admin Users Management** -- Show display ID in the users table
-- **Admin Providers/Vendors Management** -- Show provider/vendor display IDs
-- **Sidebar/Header** -- Show current user's display ID under their name
-- **Booking Detail Page** -- Show traveler and provider IDs
-
-### 4. Files to Modify
-
-| File | Change |
-|------|--------|
-| `profiles` table (migration) | Add `display_id` column + trigger function |
-| `src/lib/auth/AuthContext.tsx` | Include `display_id` in Profile interface and fetch |
-| `src/components/layout/EnhancedSidebar.tsx` | Show display ID badge |
-| `src/components/layout/EnhancedHeader.tsx` | Show display ID in user menu |
-| `src/pages/settings/ProfileSettingsPage.tsx` | Display ID as read-only field |
-| `src/hooks/useAdminUsers.ts` | Include display_id in query |
-| `src/pages/admin/UsersManagementPage.tsx` | Show display ID column |
-
-### 5. Database Function Logic
-
-```text
-1. On user_roles INSERT trigger:
-   a. Determine prefix from role (traveler->WKIU, provider->WKIP, etc.)
-   b. Count existing profiles with that prefix pattern
-   c. Next number = count + 1
-   d. Format: prefix + zero-padded number
-   e. UPDATE profiles SET display_id = generated_id WHERE user_id = NEW.user_id
-```
-
-The function uses `FOR UPDATE` locking to prevent race conditions on concurrent signups.
+- One new database migration file to update the function (no frontend changes needed)
 
