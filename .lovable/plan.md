@@ -1,69 +1,106 @@
 
 
-# Fix: Database Error on Account Creation
+# Platform Improvements Plan
 
-## Problem
+## Overview
 
-The `generate_display_id()` trigger function uses `FOR UPDATE` with `count(*)` (an aggregate function), which PostgreSQL does not allow. This causes every signup to fail with:
+A set of targeted improvements across security, UX, and functionality to make the platform more robust and production-ready.
 
-```
-ERROR: FOR UPDATE is not allowed with aggregate functions
-```
+---
 
-## Solution
+## 1. Fix: Admin "Create User" Logs Out Current Admin
 
-Replace the `FOR UPDATE` locking with a simple `count(*)` query. To prevent race conditions, we can use an `ADVISORY LOCK` instead.
+**Problem**: The `CreateUserDialog` uses `supabase.auth.signUp()` which automatically signs in as the new user, logging out the admin.
 
-### Database Migration
+**Solution**: Create a backend function (`create-user-admin`) that uses the Supabase Admin API to create users without affecting the current session.
 
-Update the `generate_display_id()` function:
+- New edge function: `supabase/functions/create-user-admin/index.ts`
+- Update `useCreateUser.ts` to call the edge function instead of `signUp()`
+- The edge function verifies the caller is an admin before proceeding
 
-```sql
-CREATE OR REPLACE FUNCTION public.generate_display_id()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  _prefix text;
-  _pad_length int;
-  _next_num int;
-  _display_id text;
-BEGIN
-  _prefix := CASE NEW.role
-    WHEN 'traveler' THEN 'WKIU'
-    WHEN 'provider' THEN 'WKIP'
-    WHEN 'vendor' THEN 'WKIV'
-    WHEN 'admin' THEN 'WKIA'
-    WHEN 'super_admin' THEN 'WAKISU'
-    ELSE 'WKIU'
-  END;
+---
 
-  _pad_length := CASE WHEN NEW.role = 'super_admin' THEN 3 ELSE 5 END;
+## 2. Forgot Password Flow
 
-  -- Use advisory lock to prevent race conditions (hash the prefix)
-  PERFORM pg_advisory_xact_lock(hashtext(_prefix));
+**Problem**: The login page links to `/forgot-password` which doesn't exist (404).
 
-  -- Count existing profiles with same prefix (no FOR UPDATE needed)
-  SELECT count(*) + 1 INTO _next_num
-  FROM public.profiles
-  WHERE display_id LIKE _prefix || '%';
+**Solution**: Create a working password reset page.
 
-  _display_id := _prefix || lpad(_next_num::text, _pad_length, '0');
+- New page: `src/pages/auth/ForgotPasswordPage.tsx`
+- Uses `supabase.auth.resetPasswordForEmail()` 
+- Add route in `App.tsx`
+- Bilingual (EN/AR) with the same premium styling as login/signup
 
-  UPDATE public.profiles
-  SET display_id = _display_id
-  WHERE user_id = NEW.user_id;
+---
 
-  RETURN NEW;
-END;
-$$;
-```
+## 3. Email Search in Admin User Management
 
-**Key change**: Removed `FOR UPDATE` from the aggregate query and replaced it with `pg_advisory_xact_lock` for safe concurrency handling. Advisory locks are transaction-scoped and work perfectly with aggregate functions.
+**Problem**: Admin search only filters by name and phone -- no way to search by email or display ID.
 
-### Files Changed
+**Solution**: Extend the search to include email (from auth metadata) and display_id.
 
-- One new database migration file to update the function (no frontend changes needed)
+- Update `useAdminUsers.ts` to fetch email from user metadata
+- Update search filter in `UsersManagementPage.tsx` to match against email and display_id
+- Add email column to the users table
+
+---
+
+## 4. "Last Seen" Column in Admin Users Table
+
+**Problem**: Admin can see when users joined but not when they were last active.
+
+**Solution**: Show `last_login_at` from profiles in the users table.
+
+- Update `useAdminUsers.ts` to include `last_login_at`, `last_login_device`, `last_login_location`
+- Add "Last Active" column to `UsersManagementPage.tsx` showing relative time (e.g., "2 hours ago")
+
+---
+
+## 5. User Detail View in Admin Panel
+
+**Problem**: Admins can only see basic info in the table. No way to view full user details.
+
+**Solution**: Add a user detail dialog/sheet showing complete profile info.
+
+- Display ID, full name (EN + AR), email, phone, role, joined date
+- Last login info (device, location, time)
+- Active sessions list
+- Booking stats (active, completed)
+
+---
+
+## 6. Session Termination (Real)
+
+**Problem**: "Sign out all devices" in profile settings only clears the local state, doesn't actually invalidate sessions.
+
+**Solution**: 
+
+- Update `handleSignOutAllSessions` to delete sessions from the `user_sessions` table
+- Mark old sessions as `is_current = false`
+
+---
+
+## Technical Details
+
+### Files to Create
+| File | Purpose |
+|------|---------|
+| `supabase/functions/create-user-admin/index.ts` | Secure user creation for admins |
+| `src/pages/auth/ForgotPasswordPage.tsx` | Password reset page |
+
+### Files to Modify
+| File | Change |
+|------|--------|
+| `src/hooks/useCreateUser.ts` | Call edge function instead of signUp |
+| `src/hooks/useAdminUsers.ts` | Add email, last_login fields |
+| `src/pages/admin/UsersManagementPage.tsx` | Email column, last active column, user detail dialog |
+| `src/pages/settings/ProfileSettingsPage.tsx` | Real session termination |
+| `src/App.tsx` | Add forgot-password route |
+
+### Edge Function: create-user-admin
+- Accepts: email, password, fullName, fullNameAr, phone, role
+- Validates caller is admin/super_admin via JWT
+- Uses Supabase service role key to create user via admin API
+- Returns created user data
+- Enforces role hierarchy (admins can't create super_admins)
 
