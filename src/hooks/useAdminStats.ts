@@ -32,7 +32,27 @@ export function useAdminStats() {
   const fetchStats = async () => {
     setIsLoading(true);
     try {
-      // Fetch counts in parallel
+      // Try materialized view first (fast path)
+      const { data: matData, error: matError } = await supabase.rpc('get_admin_dashboard_stats');
+
+      if (!matError && matData) {
+        const d = matData as Record<string, number>;
+        setStats({
+          totalTravelers: d.total_travelers || 0,
+          totalProviders: d.total_providers || 0,
+          totalVendors: d.total_vendors || 0,
+          totalBookings: d.total_bookings || 0,
+          pendingBookings: d.pending_bookings || 0,
+          completedBookings: d.completed_bookings || 0,
+          totalDonations: d.total_donations || 0,
+          donationAmount: d.donation_amount || 0,
+          pendingKyc: d.pending_kyc || 0,
+          activeServices: d.active_services || 0,
+        });
+        return;
+      }
+
+      // Fallback to individual queries
       const [
         travelersRes,
         providersRes,

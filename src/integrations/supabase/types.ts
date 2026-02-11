@@ -1584,6 +1584,22 @@ export type Database = {
       }
     }
     Views: {
+      admin_dashboard_stats: {
+        Row: {
+          active_services: number | null
+          completed_bookings: number | null
+          donation_amount: number | null
+          pending_bookings: number | null
+          pending_kyc: number | null
+          refreshed_at: string | null
+          total_bookings: number | null
+          total_donations: number | null
+          total_providers: number | null
+          total_travelers: number | null
+          total_vendors: number | null
+        }
+        Relationships: []
+      }
       donations_safe: {
         Row: {
           allocated_amount: number | null
@@ -1659,6 +1675,8 @@ export type Database = {
     }
     Functions: {
       cleanup_expired_idempotency_keys: { Args: never; Returns: number }
+      cleanup_old_data: { Args: never; Returns: Json }
+      get_admin_dashboard_stats: { Args: never; Returns: Json }
       get_donation_display_info: {
         Args: { donation_row: Database["public"]["Tables"]["donations"]["Row"] }
         Returns: Json
@@ -1686,6 +1704,7 @@ export type Database = {
         }
         Returns: string
       }
+      refresh_admin_dashboard_stats: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "traveler" | "provider" | "super_admin" | "vendor"
