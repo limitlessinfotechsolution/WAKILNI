@@ -1,4 +1,4 @@
-import { Star, Clock, Check, MapPin } from 'lucide-react';
+import { Star, Clock, Check } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -22,17 +22,13 @@ const serviceTypeIcons: Record<string, string> = {
 };
 
 const serviceTypeColors: Record<string, string> = {
-  umrah: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
-  hajj: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
-  ziyarat: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+  umrah: 'bg-primary/10 text-primary border-primary/20',
+  hajj: 'bg-secondary/10 text-secondary border-secondary/20',
+  ziyarat: 'bg-info/10 text-info border-info/20',
 };
 
 export function ServiceCard({ 
-  service, 
-  variant = 'grid', 
-  onBook, 
-  onViewDetails,
-  className 
+  service, variant = 'grid', onBook, onViewDetails, className 
 }: ServiceCardProps) {
   const { isRTL } = useLanguage();
   
@@ -55,30 +51,30 @@ export function ServiceCard({
     return (
       <Card 
         className={cn(
-          "hover:shadow-md transition-all duration-200 cursor-pointer",
+          "hover:shadow-medium transition-all duration-200 cursor-pointer active:scale-[0.98]",
           className
         )}
         onClick={() => onViewDetails?.(service)}
       >
-        <CardContent className="p-4 flex items-center gap-4">
-          <div className="w-16 h-16 rounded-lg overflow-hidden bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
+        <CardContent className="p-3 md:p-4 flex items-center gap-3">
+          <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl overflow-hidden bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center shrink-0">
             {heroImage ? (
               <img src={heroImage} alt={title} className="w-full h-full object-cover" />
             ) : (
-              <span className="text-2xl">{serviceTypeIcons[service.service_type]}</span>
+              <span className="text-xl md:text-2xl">{serviceTypeIcons[service.service_type]}</span>
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-medium truncate">{title}</h3>
-            <p className="text-sm text-muted-foreground">{providerName}</p>
+            <h3 className="font-medium text-sm truncate">{title}</h3>
+            <p className="text-xs text-muted-foreground truncate">{providerName}</p>
           </div>
-          <div className="text-right">
-            <p className="font-semibold text-primary">
+          <div className="text-end shrink-0">
+            <p className="font-semibold text-sm text-primary">
               {formatPrice(service.price, service.currency)}
             </p>
             {service.provider?.rating && (
-              <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+              <div className="flex items-center gap-1 text-xs text-muted-foreground justify-end">
+                <Star className="h-3 w-3 fill-secondary text-secondary" />
                 {service.provider.rating.toFixed(1)}
               </div>
             )}
@@ -91,108 +87,95 @@ export function ServiceCard({
   return (
     <Card 
       className={cn(
-        "group overflow-hidden hover:shadow-lg transition-all duration-300",
-        "hover:border-primary/30",
+        "group overflow-hidden border-border/50",
+        "hover:shadow-medium hover:border-primary/20",
+        "transition-all duration-300 active:scale-[0.98]",
         className
       )}
     >
       {/* Hero Image */}
-      <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-primary/20 to-primary/5">
+      <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-primary/15 to-primary/5">
         {heroImage ? (
           <img 
             src={heroImage} 
             alt={title} 
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            loading="lazy"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <span className="text-5xl opacity-50">{serviceTypeIcons[service.service_type]}</span>
+            <span className="text-4xl md:text-5xl opacity-40">{serviceTypeIcons[service.service_type]}</span>
           </div>
         )}
         
-        {/* Service Type Badge */}
-        <Badge 
-          className={cn(
-            "absolute top-3 left-3 border",
-            serviceTypeColors[service.service_type]
-          )}
-        >
+        {/* Badges */}
+        <Badge className={cn("absolute top-2.5 left-2.5 border text-xs", serviceTypeColors[service.service_type])}>
           {serviceTypeIcons[service.service_type]} {service.service_type.charAt(0).toUpperCase() + service.service_type.slice(1)}
         </Badge>
         
-        {/* Duration Badge */}
         {service.duration_days && (
-          <Badge variant="secondary" className="absolute top-3 right-3">
+          <Badge variant="secondary" className="absolute top-2.5 right-2.5 text-xs">
             <Clock className="h-3 w-3 mr-1" />
             {service.duration_days} {isRTL ? 'يوم' : 'days'}
           </Badge>
         )}
       </div>
 
-      <CardContent className="p-5">
-        {/* Provider Info */}
-        <div className="flex items-center gap-2 mb-3">
-          <Avatar className="h-6 w-6">
-            <AvatarFallback className="text-xs bg-primary/10 text-primary">
+      <CardContent className="p-4 md:p-5">
+        {/* Provider */}
+        <div className="flex items-center gap-2 mb-2.5">
+          <Avatar className="h-5 w-5">
+            <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
               {providerName.charAt(0)}
             </AvatarFallback>
           </Avatar>
-          <span className="text-sm text-muted-foreground">{providerName}</span>
+          <span className="text-xs text-muted-foreground truncate flex-1">{providerName}</span>
           {service.provider?.rating && (
-            <div className="flex items-center gap-1 ml-auto">
-              <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-              <span className="text-sm font-medium">{service.provider.rating.toFixed(1)}</span>
+            <div className="flex items-center gap-1 shrink-0">
+              <Star className="h-3.5 w-3.5 fill-secondary text-secondary" />
+              <span className="text-xs font-medium">{service.provider.rating.toFixed(1)}</span>
               {service.provider.total_reviews && (
-                <span className="text-xs text-muted-foreground">
-                  ({service.provider.total_reviews})
-                </span>
+                <span className="text-[10px] text-muted-foreground">({service.provider.total_reviews})</span>
               )}
             </div>
           )}
         </div>
 
         {/* Title & Description */}
-        <h3 className="font-semibold text-lg mb-2 line-clamp-1">{title}</h3>
-        <p className="text-sm text-muted-foreground line-clamp-2 mb-4">{description}</p>
+        <h3 className="font-semibold text-base mb-1.5 line-clamp-1">{title}</h3>
+        <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{description}</p>
 
-        {/* Includes Preview */}
+        {/* Includes */}
         {includes && includes.length > 0 && (
-          <div className="space-y-1.5 mb-4">
-            {includes.slice(0, 3).map((item, idx) => (
-              <div key={idx} className="flex items-center gap-2 text-sm">
-                <Check className="h-4 w-4 text-emerald-500 shrink-0" />
+          <div className="space-y-1 mb-3">
+            {includes.slice(0, 2).map((item, idx) => (
+              <div key={idx} className="flex items-center gap-2 text-xs">
+                <Check className="h-3.5 w-3.5 text-success shrink-0" />
                 <span className="truncate">{isRTL && item.ar ? item.ar : item.en}</span>
               </div>
             ))}
-            {includes.length > 3 && (
-              <p className="text-xs text-muted-foreground pl-6">
-                +{includes.length - 3} {isRTL ? 'المزيد' : 'more'}
+            {includes.length > 2 && (
+              <p className="text-[11px] text-muted-foreground ps-5">
+                +{includes.length - 2} {isRTL ? 'المزيد' : 'more'}
               </p>
             )}
           </div>
         )}
 
         {/* Price & Actions */}
-        <div className="flex items-center justify-between pt-4 border-t border-border/50">
+        <div className="flex items-center justify-between pt-3 border-t border-border/50">
           <div>
-            <p className="text-xs text-muted-foreground">{isRTL ? 'السعر' : 'Price'}</p>
-            <p className="text-xl font-bold text-primary">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{isRTL ? 'السعر' : 'Price'}</p>
+            <p className="text-lg font-bold text-primary">
               {formatPrice(service.price, service.currency)}
             </p>
           </div>
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => onViewDetails?.(service)}
-            >
+            <Button variant="outline" size="sm" className="rounded-xl text-xs h-8" onClick={() => onViewDetails?.(service)}>
               {isRTL ? 'التفاصيل' : 'Details'}
             </Button>
-            <Button 
-              size="sm"
-              onClick={() => onBook?.(service)}
-            >
-              {isRTL ? 'احجز الآن' : 'Book Now'}
+            <Button size="sm" className="rounded-xl text-xs h-8" onClick={() => onBook?.(service)}>
+              {isRTL ? 'احجز' : 'Book'}
             </Button>
           </div>
         </div>
