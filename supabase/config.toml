@@ -2,3 +2,6 @@ project_id = "losoojemhlaulfcltnsq"
 
 [functions.create-user-admin]
 verify_jwt = false
+
+[functions.scheduled-maintenance]
+verify_jwt = false
