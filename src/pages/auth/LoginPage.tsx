@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, Sparkles, Fingerprint } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, Fingerprint } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -68,8 +68,20 @@ export default function LoginPage() {
         <div className="absolute inset-0 pattern-islamic opacity-30" />
       </div>
 
+      {/* Loading Overlay */}
+      {isLoading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm animate-fade-in">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+            <p className="text-sm text-muted-foreground font-medium">
+              {isRTL ? 'جاري تسجيل الدخول...' : 'Signing in...'}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
-      <header className="flex items-center justify-between p-4 md:p-6 relative z-10">
+      <header className="flex items-center justify-between p-4 md:p-6 relative z-10 animate-fade-in">
         <Link to="/" className="flex items-center gap-3 group">
           <div className={cn(
             'flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden',
@@ -92,17 +104,16 @@ export default function LoginPage() {
       </header>
 
       {/* Content */}
-      <main className="flex-1 flex items-center justify-center p-4 md:p-6">
-        <div className="w-full max-w-md animate-fade-in">
+      <main className="flex-1 flex items-center justify-center p-4 md:p-8">
+        <div className="w-full max-w-md">
           {/* Card with Gradient Border */}
-          <div className="relative p-px rounded-3xl bg-gradient-to-br from-primary/50 via-transparent to-secondary/50">
+          <div className="relative p-px rounded-3xl bg-gradient-to-br from-primary/50 via-transparent to-secondary/50 animate-scale-in">
             <GlassCard className="rounded-[23px] p-8">
               {/* Header */}
-              <div className="text-center mb-8">
-                {/* Animated Logo */}
+              <div className="text-center mb-8 animate-fade-in" style={{ animationDelay: '100ms' }}>
                 <div className={cn(
                   'inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-6 overflow-hidden',
-                  'shadow-xl shadow-primary/30 animate-scale-in'
+                  'shadow-xl shadow-primary/30'
                 )}>
                   <img src={wakilniLogo} alt="Wakilni" className="h-full w-full object-cover" />
                 </div>
@@ -116,9 +127,9 @@ export default function LoginPage() {
                 <p className="text-muted-foreground">{t.common.welcome}</p>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Email Field */}
-                <div className="space-y-2">
+                <div className="space-y-2 animate-fade-in" style={{ animationDelay: '150ms' }}>
                   <Label 
                     htmlFor="email" 
                     className={cn(
@@ -162,7 +173,7 @@ export default function LoginPage() {
                 </div>
 
                 {/* Password Field */}
-                <div className="space-y-2">
+                <div className="space-y-2 animate-fade-in" style={{ animationDelay: '200ms' }}>
                   <div className="flex items-center justify-between">
                     <Label 
                       htmlFor="password"
@@ -225,26 +236,28 @@ export default function LoginPage() {
                 </div>
 
                 {/* Submit Button */}
-                <Button 
-                  type="submit" 
-                  className={cn(
-                    'w-full h-12 rounded-xl text-base font-medium',
-                    'bg-gradient-to-r from-primary to-primary/90',
-                    'shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40',
-                    'transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]'
-                  )} 
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                      {t.common.loading}
-                    </div>
-                  ) : t.auth.login}
-                </Button>
+                <div className="animate-fade-in" style={{ animationDelay: '250ms' }}>
+                  <Button 
+                    type="submit" 
+                    className={cn(
+                      'w-full h-12 rounded-xl text-base font-medium',
+                      'bg-gradient-to-r from-primary to-primary/90',
+                      'shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40',
+                      'transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]'
+                    )} 
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                        {t.common.loading}
+                      </div>
+                    ) : t.auth.login}
+                  </Button>
+                </div>
 
                 {/* Divider */}
-                <div className="relative py-4">
+                <div className="relative py-2 animate-fade-in" style={{ animationDelay: '300ms' }}>
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-border/50" />
                   </div>
@@ -256,18 +269,20 @@ export default function LoginPage() {
                 </div>
 
                 {/* Biometric Option (Visual Only) */}
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full h-12 rounded-xl border-2 border-border/50 hover:border-primary/50 transition-all duration-200"
-                  disabled
-                >
-                  <Fingerprint className="h-5 w-5 me-2 text-primary" />
-                  {isRTL ? 'تسجيل الدخول بالبصمة' : 'Sign in with Biometrics'}
-                </Button>
+                <div className="animate-fade-in" style={{ animationDelay: '350ms' }}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full h-12 rounded-xl border-2 border-border/50 hover:border-primary/50 transition-all duration-200"
+                    disabled
+                  >
+                    <Fingerprint className="h-5 w-5 me-2 text-primary" />
+                    {isRTL ? 'تسجيل الدخول بالبصمة' : 'Sign in with Biometrics'}
+                  </Button>
+                </div>
 
                 {/* Sign Up Link */}
-                <p className="text-center text-sm text-muted-foreground pt-4">
+                <p className="text-center text-sm text-muted-foreground pt-2 animate-fade-in" style={{ animationDelay: '400ms' }}>
                   {t.auth.noAccount}{' '}
                   <Link 
                     to="/signup" 
@@ -281,7 +296,7 @@ export default function LoginPage() {
           </div>
 
           {/* Bottom Quote */}
-          <div className="text-center mt-8 animate-fade-in" style={{ animationDelay: '300ms' }}>
+          <div className="text-center mt-8 animate-fade-in" style={{ animationDelay: '500ms' }}>
             <p className={cn(
               'text-xs text-muted-foreground',
               isRTL ? 'font-arabic' : 'italic'

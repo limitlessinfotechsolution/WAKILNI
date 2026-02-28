@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { 
   Users, Calendar, Heart, Shield, Settings, FileText, TrendingUp, Building2, 
-  Crown, CreditCard, BarChart3, Clock, Sparkles, Activity, AlertCircle, CheckCircle2, Zap
+  Crown, CreditCard, BarChart3, Clock, Activity, Zap
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +17,6 @@ import { PullToRefresh } from '@/components/ui/pull-to-refresh';
 import { AdminDashboardSkeleton } from '@/components/dashboard/DashboardSkeletons';
 import { useDashboardRefresh } from '@/hooks/useDashboardRefresh';
 import { GlassCard } from '@/components/cards';
-import { Progress } from '@/components/ui/progress';
 import { useAuditLogs } from '@/hooks/useAuditLogs';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
@@ -28,409 +27,285 @@ export default function AdminDashboard() {
   const { isSuperAdmin, profile } = useAuth();
   const { isLoading, refresh, finishLoading } = useDashboardRefresh();
   const { logs: recentLogs, isLoading: logsLoading } = useAuditLogs({ limit: 10 });
-  const [charityStats, setCharityStats] = useState({ requests: 0, fulfilled: 0, approvedKyc: 0 });
+  const [charityStats, setCharityStats] = useState({ requests: 0, fulfilled: 0, approvedKyc: 0, activeBookings: 0 });
 
   useEffect(() => {
     const fetchExtraStats = async () => {
-      const [charityRes, fulfilledRes, approvedKycRes] = await Promise.all([
+      const [charityRes, fulfilledRes, approvedKycRes, activeBookingsRes] = await Promise.all([
         supabase.from('charity_requests').select('*', { count: 'exact', head: true }),
         supabase.from('charity_requests').select('*', { count: 'exact', head: true }).eq('status', 'approved'),
         supabase.from('providers').select('*', { count: 'exact', head: true }).eq('kyc_status', 'approved'),
+        supabase.from('bookings').select('*', { count: 'exact', head: true }).in('status', ['accepted', 'in_progress']),
       ]);
       setCharityStats({
         requests: charityRes.count || 0,
         fulfilled: fulfilledRes.count || 0,
         approvedKyc: approvedKycRes.count || 0,
+        activeBookings: activeBookingsRes.count || 0,
       });
     };
     fetchExtraStats();
   }, []);
 
   useEffect(() => {
-    if (!statsLoading) {
-      finishLoading();
-    }
+    if (!statsLoading) finishLoading();
   }, [statsLoading, finishLoading]);
 
   if (isLoading && statsLoading) {
-    return (
-      <DashboardLayout>
-        <AdminDashboardSkeleton />
-      </DashboardLayout>
-    );
+    return <DashboardLayout><AdminDashboardSkeleton /></DashboardLayout>;
   }
 
   const adminLinks = [
-    {
-      title: isRTL ? 'إدارة المستخدمين' : 'User Management',
-      description: isRTL ? 'إنشاء وإدارة المستخدمين' : 'Create and manage users',
-      href: '/admin/users',
-      icon: <Users className="h-5 w-5" />,
-      color: 'from-gray-500 to-slate-500',
-    },
-    {
-      title: isRTL ? 'مقدمو الخدمات' : 'Providers',
-      description: isRTL ? 'إدارة مقدمي الخدمات' : 'Manage providers',
-      href: '/admin/providers',
-      icon: <Users className="h-5 w-5" />,
-      color: 'from-green-500 to-emerald-500',
-    },
-    {
-      title: isRTL ? 'الوكلاء' : 'Vendors',
-      description: isRTL ? 'إدارة وكالات السفر' : 'Manage agencies',
-      href: '/admin/vendors',
-      icon: <Building2 className="h-5 w-5" />,
-      color: 'from-blue-500 to-cyan-500',
-    },
-    {
-      title: isRTL ? 'طابور التحقق' : 'KYC Queue',
-      description: isRTL ? 'مراجعة الطلبات' : 'Review requests',
-      href: '/admin/kyc',
-      icon: <Shield className="h-5 w-5" />,
-      badge: stats.pendingKyc,
-      color: 'from-orange-500 to-amber-500',
-    },
-    {
-      title: isRTL ? 'اعتماد المعتمرين' : 'Pilgrim Verification',
-      description: isRTL ? 'مراجعة شهادات المعتمرين' : 'Review pilgrim certifications',
-      href: '/admin/scholar-verification',
-      icon: <Shield className="h-5 w-5" />,
-      color: 'from-purple-500 to-violet-500',
-    },
-    {
-      title: isRTL ? 'الاشتراكات' : 'Subscriptions',
-      description: isRTL ? 'إدارة اشتراكات الوكلاء' : 'Manage subscriptions',
-      href: '/admin/subscriptions',
-      icon: <CreditCard className="h-5 w-5" />,
-      color: 'from-purple-500 to-indigo-500',
-    },
-    {
-      title: isRTL ? 'التبرعات' : 'Donations',
-      description: isRTL ? 'إدارة التبرعات' : 'Manage donations',
-      href: '/admin/donations',
-      icon: <Heart className="h-5 w-5" />,
-      color: 'from-pink-500 to-rose-500',
-    },
-    {
-      title: isRTL ? 'التخصيصات' : 'Allocations',
-      description: isRTL ? 'تعيين الحجوزات' : 'Assign bookings',
-      href: '/admin/allocations',
-      icon: <Calendar className="h-5 w-5" />,
-      badge: stats.pendingBookings,
-      color: 'from-teal-500 to-cyan-500',
-    },
+    { title: isRTL ? 'إدارة المستخدمين' : 'User Management', description: isRTL ? 'إنشاء وإدارة المستخدمين' : 'Create and manage users', href: '/admin/users', icon: <Users className="h-5 w-5" />, color: 'from-gray-500 to-slate-500' },
+    { title: isRTL ? 'مقدمو الخدمات' : 'Providers', description: isRTL ? 'إدارة مقدمي الخدمات' : 'Manage providers', href: '/admin/providers', icon: <Users className="h-5 w-5" />, color: 'from-green-500 to-emerald-500' },
+    { title: isRTL ? 'الوكلاء' : 'Vendors', description: isRTL ? 'إدارة وكالات السفر' : 'Manage agencies', href: '/admin/vendors', icon: <Building2 className="h-5 w-5" />, color: 'from-blue-500 to-cyan-500' },
+    { title: isRTL ? 'طابور التحقق' : 'KYC Queue', description: isRTL ? 'مراجعة الطلبات' : 'Review requests', href: '/admin/kyc', icon: <Shield className="h-5 w-5" />, badge: stats.pendingKyc, color: 'from-orange-500 to-amber-500' },
+    { title: isRTL ? 'اعتماد المعتمرين' : 'Pilgrim Verification', description: isRTL ? 'مراجعة شهادات المعتمرين' : 'Review pilgrim certifications', href: '/admin/scholar-verification', icon: <Shield className="h-5 w-5" />, color: 'from-purple-500 to-violet-500' },
+    { title: isRTL ? 'الاشتراكات' : 'Subscriptions', description: isRTL ? 'إدارة اشتراكات الوكلاء' : 'Manage subscriptions', href: '/admin/subscriptions', icon: <CreditCard className="h-5 w-5" />, color: 'from-purple-500 to-indigo-500' },
+    { title: isRTL ? 'التبرعات' : 'Donations', description: isRTL ? 'إدارة التبرعات' : 'Manage donations', href: '/admin/donations', icon: <Heart className="h-5 w-5" />, color: 'from-pink-500 to-rose-500' },
+    { title: isRTL ? 'التخصيصات' : 'Allocations', description: isRTL ? 'تعيين الحجوزات' : 'Assign bookings', href: '/admin/allocations', icon: <Calendar className="h-5 w-5" />, badge: stats.pendingBookings, color: 'from-teal-500 to-cyan-500' },
   ];
 
   const superAdminLinks = [
-    {
-      title: isRTL ? 'التحليلات' : 'Analytics',
-      href: '/super-admin/analytics',
-      icon: <BarChart3 className="h-5 w-5" />,
-      description: isRTL ? 'إحصائيات شاملة' : 'Full stats',
-    },
-    {
-      title: isRTL ? 'الاشتراكات' : 'Subscriptions',
-      href: '/super-admin/subscriptions',
-      icon: <CreditCard className="h-5 w-5" />,
-      description: isRTL ? 'تحكم كامل' : 'Full control',
-    },
-    {
-      title: isRTL ? 'إعدادات النظام' : 'Settings',
-      href: '/super-admin/settings',
-      icon: <Settings className="h-5 w-5" />,
-      description: isRTL ? 'إعدادات المنصة' : 'Platform settings',
-    },
-    {
-      title: isRTL ? 'سجل التدقيق' : 'Audit Logs',
-      href: '/super-admin/audit',
-      icon: <FileText className="h-5 w-5" />,
-      description: isRTL ? 'تتبع الأحداث' : 'Track events',
-    },
-    {
-      title: isRTL ? 'إدارة المشرفين' : 'Admins',
-      href: '/super-admin/admins',
-      icon: <Crown className="h-5 w-5" />,
-      description: isRTL ? 'إدارة المشرفين' : 'Manage admins',
-    },
+    { title: isRTL ? 'التحليلات' : 'Analytics', href: '/super-admin/analytics', icon: <BarChart3 className="h-5 w-5" />, description: isRTL ? 'إحصائيات شاملة' : 'Full stats' },
+    { title: isRTL ? 'الاشتراكات' : 'Subscriptions', href: '/super-admin/subscriptions', icon: <CreditCard className="h-5 w-5" />, description: isRTL ? 'تحكم كامل' : 'Full control' },
+    { title: isRTL ? 'إعدادات النظام' : 'Settings', href: '/super-admin/settings', icon: <Settings className="h-5 w-5" />, description: isRTL ? 'إعدادات المنصة' : 'Platform settings' },
+    { title: isRTL ? 'سجل التدقيق' : 'Audit Logs', href: '/super-admin/audit', icon: <FileText className="h-5 w-5" />, description: isRTL ? 'تتبع الأحداث' : 'Track events' },
+    { title: isRTL ? 'إدارة المشرفين' : 'Admins', href: '/super-admin/admins', icon: <Crown className="h-5 w-5" />, description: isRTL ? 'إدارة المشرفين' : 'Manage admins' },
   ];
 
   return (
     <DashboardLayout>
       <PullToRefresh onRefresh={refresh} className="h-full">
-        <div className="p-4 md:p-6 space-y-5 md:space-y-6">
-        {/* Header - Premium admin styling */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className={cn(
-              "relative p-3 md:p-4 rounded-2xl text-white shadow-xl shrink-0",
-              isSuperAdmin 
-                ? 'bg-gradient-to-br from-red-500 via-rose-500 to-pink-500 shadow-red-500/25' 
-                : 'bg-gradient-to-br from-purple-500 via-violet-500 to-indigo-500 shadow-purple-500/25'
-            )}>
-              {isSuperAdmin ? <Crown className="h-6 w-6 md:h-7 md:w-7" /> : <Shield className="h-6 w-6 md:h-7 md:w-7" />}
-              {/* Animated glow */}
+        <div className="p-4 md:p-8 space-y-6 md:space-y-8">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in">
+            <div className="flex items-center gap-4">
               <div className={cn(
-                "absolute inset-0 rounded-2xl blur-xl opacity-40 -z-10",
-                isSuperAdmin ? 'bg-red-500' : 'bg-purple-500'
-              )} />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <Badge className={cn(
-                  "text-[10px] h-5 px-2 font-bold border-0 text-white",
-                  isSuperAdmin 
-                    ? 'bg-gradient-to-r from-red-500 to-rose-500'
-                    : 'bg-gradient-to-r from-purple-500 to-violet-500'
-                )}>
-                  {isSuperAdmin ? (
-                    <><Zap className="h-2.5 w-2.5 mr-1" />Super Admin</>
-                  ) : (
-                    <><Shield className="h-2.5 w-2.5 mr-1" />Admin</>
-                  )}
-                </Badge>
-                <span className="flex items-center gap-1 text-[10px] text-emerald-600">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Active
-                </span>
+                "relative p-3 rounded-2xl text-white shadow-xl shrink-0",
+                isSuperAdmin 
+                  ? 'bg-gradient-to-br from-red-500 via-rose-500 to-pink-500 shadow-red-500/25' 
+                  : 'bg-gradient-to-br from-purple-500 via-violet-500 to-indigo-500 shadow-purple-500/25'
+              )}>
+                {isSuperAdmin ? <Crown className="h-6 w-6" /> : <Shield className="h-6 w-6" />}
+                <div className={cn("absolute inset-0 rounded-2xl blur-xl opacity-40 -z-10", isSuperAdmin ? 'bg-red-500' : 'bg-purple-500')} />
               </div>
-              <h1 className={cn('text-xl md:text-2xl font-bold', isRTL && 'font-arabic')}>
-                {isRTL ? 'مرحباً' : 'Welcome back'}, {profile?.full_name?.split(' ')[0] || 'Admin'}
-              </h1>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                {isSuperAdmin 
-                  ? (isRTL ? 'لديك صلاحيات كاملة على المنصة' : 'You have full platform access')
-                  : (isRTL ? 'إدارة المستخدمين والعمليات' : 'Manage users and operations')
-                }
-              </p>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <Badge className={cn(
+                    "text-[10px] h-5 px-2 font-bold border-0 text-white",
+                    isSuperAdmin ? 'bg-gradient-to-r from-red-500 to-rose-500' : 'bg-gradient-to-r from-purple-500 to-violet-500'
+                  )}>
+                    {isSuperAdmin ? <><Zap className="h-2.5 w-2.5 mr-1" />Super Admin</> : <><Shield className="h-2.5 w-2.5 mr-1" />Admin</>}
+                  </Badge>
+                  <span className="flex items-center gap-1 text-[10px] text-emerald-600">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Active
+                  </span>
+                </div>
+                <h1 className={cn('text-xl md:text-2xl font-bold', isRTL && 'font-arabic')}>
+                  {isRTL ? 'مرحباً' : 'Welcome back'}, {profile?.full_name?.split(' ')[0] || 'Admin'}
+                </h1>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  {isSuperAdmin 
+                    ? (isRTL ? 'لديك صلاحيات كاملة على المنصة' : 'You have full platform access')
+                    : (isRTL ? 'إدارة المستخدمين والعمليات' : 'Manage users and operations')}
+                </p>
+              </div>
             </div>
+            <CreateUserDialog />
           </div>
-          <CreateUserDialog />
-        </div>
 
-        {/* Quick Stats Bar - 2x2 grid on mobile */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
-          <StatCard
-            title={isRTL ? 'إجمالي المستخدمين' : 'Total Users'}
-            value={stats.totalTravelers + stats.totalProviders + stats.totalVendors}
-            icon={<Users />}
-            color="blue"
-          />
-          <StatCard
-            title={isRTL ? 'الحجوزات المكتملة' : 'Completed'}
-            value={stats.completedBookings}
-            icon={<Calendar />}
-            color="green"
-          />
-          <StatCard
-            title={isRTL ? 'بانتظار التحقق' : 'Pending KYC'}
-            value={stats.pendingKyc}
-            icon={<Shield />}
-            color="orange"
-          />
-          <StatCard
-            title={isRTL ? 'التبرعات' : 'Donations'}
-            value={`${stats.donationAmount.toLocaleString()}`}
-            icon={<Heart />}
-            color="pink"
-          />
-        </div>
-
-        {/* Widgets Grid - 2 column on mobile */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4">
-          <WidgetCard title={isRTL ? 'المستخدمون' : 'Users'} icon={<Users />} color="blue">
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs">
-                <span>{isRTL ? 'المسافرون' : 'Travelers'}</span>
-                <span className="font-bold">{stats.totalTravelers}</span>
+          {/* Quick Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+            {[
+              { title: isRTL ? 'إجمالي المستخدمين' : 'Total Users', value: stats.totalTravelers + stats.totalProviders + stats.totalVendors, icon: <Users />, color: 'blue' as const },
+              { title: isRTL ? 'الحجوزات المكتملة' : 'Completed', value: stats.completedBookings, icon: <Calendar />, color: 'green' as const },
+              { title: isRTL ? 'بانتظار التحقق' : 'Pending KYC', value: stats.pendingKyc, icon: <Shield />, color: 'orange' as const },
+              { title: isRTL ? 'التبرعات' : 'Donations', value: `${stats.donationAmount.toLocaleString()}`, icon: <Heart />, color: 'pink' as const },
+            ].map((stat, i) => (
+              <div key={i} className="animate-fade-in" style={{ animationDelay: `${50 + i * 50}ms` }}>
+                <StatCard title={stat.title} value={stat.value} icon={stat.icon} color={stat.color} />
               </div>
-              <div className="flex justify-between text-xs">
-                <span>{isRTL ? 'مقدمو الخدمات' : 'Providers'}</span>
-                <span className="font-bold">{stats.totalProviders}</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span>{isRTL ? 'الوكلاء' : 'Vendors'}</span>
-                <span className="font-bold">{stats.totalVendors}</span>
-              </div>
-            </div>
-          </WidgetCard>
-          
-          <WidgetCard title={isRTL ? 'طابور التحقق' : 'KYC Queue'} icon={<Shield />} color="yellow">
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs">
-                <span>{isRTL ? 'قيد الانتظار' : 'Pending'}</span>
-                <Badge variant="outline" className="h-5 text-[10px]">{stats.pendingKyc}</Badge>
-              </div>
-              <div className="flex justify-between text-xs pt-1.5 border-t">
-                <span className="text-green-600">{isRTL ? 'موافق' : 'Approved'}</span>
-                <span className="font-bold text-green-600">{charityStats.approvedKyc}</span>
-              </div>
-            </div>
-          </WidgetCard>
-
-          <WidgetCard title={isRTL ? 'الحجوزات' : 'Bookings'} icon={<Calendar />} color="primary">
-            <div className="text-center">
-              <p className="text-2xl md:text-3xl font-bold">{stats.totalBookings}</p>
-              <p className="text-[10px] text-muted-foreground">{isRTL ? 'إجمالي الحجوزات' : 'Total Bookings'}</p>
-              <div className="grid grid-cols-3 gap-1 mt-2 text-[10px]">
-                <div>
-                  <p className="font-bold text-yellow-500">{stats.pendingBookings}</p>
-                  <p className="text-muted-foreground">{isRTL ? 'معلق' : 'Pending'}</p>
-                </div>
-                <div>
-                  <p className="font-bold text-blue-500">0</p>
-                  <p className="text-muted-foreground">{isRTL ? 'جارٍ' : 'Active'}</p>
-                </div>
-                <div>
-                  <p className="font-bold text-green-500">{stats.completedBookings}</p>
-                  <p className="text-muted-foreground">{isRTL ? 'مكتمل' : 'Done'}</p>
-                </div>
-              </div>
-            </div>
-          </WidgetCard>
-
-          <WidgetCard title={isRTL ? 'الإيرادات' : 'Revenue'} icon={<TrendingUp />} color="green">
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground">{isRTL ? 'إجمالي التبرعات' : 'Total Donations'}</p>
-              <p className="text-lg md:text-xl font-bold text-green-500">
-                {stats.donationAmount.toLocaleString()} <span className="text-[10px]">{isRTL ? 'ر.س' : 'SAR'}</span>
-              </p>
-            </div>
-          </WidgetCard>
-
-          <WidgetCard title={isRTL ? 'الصدقات' : 'Charity'} icon={<Heart />} color="red">
-            <div className="grid grid-cols-2 gap-2 text-center">
-              <div>
-                <p className="text-lg font-bold">{charityStats.requests}</p>
-                <p className="text-[10px] text-muted-foreground">{isRTL ? 'الطلبات' : 'Requests'}</p>
-              </div>
-              <div>
-                <p className="text-lg font-bold text-green-500">{charityStats.fulfilled}</p>
-                <p className="text-[10px] text-muted-foreground">{isRTL ? 'مُنجز' : 'Fulfilled'}</p>
-              </div>
-            </div>
-          </WidgetCard>
-
-          <WidgetCard title={isRTL ? 'صحة النظام' : 'System'} icon={<BarChart3 />} color="purple">
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs">
-                <span>{isRTL ? 'وقت التشغيل' : 'Uptime'}</span>
-                <Badge className="bg-green-500 h-5 text-[10px]">99.9%</Badge>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span>{isRTL ? 'معدل الخطأ' : 'Error Rate'}</span>
-                <span className="font-bold text-green-500">0%</span>
-              </div>
-            </div>
-          </WidgetCard>
-        </div>
-
-        {/* Quick Links - Mobile optimized grid */}
-        <div>
-          <h2 className={cn('text-base md:text-lg font-semibold mb-3 flex items-center gap-2', isRTL && 'font-arabic')}>
-            <TrendingUp className="h-4 w-4 md:h-5 md:w-5 text-primary" />
-            {isRTL ? 'الإدارة والعمليات' : 'Management'}
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3">
-            {adminLinks.map((link, index) => (
-              <Link key={index} to={link.href}>
-                <ActionCard
-                  title={link.title}
-                  description={link.description}
-                  icon={link.icon}
-                  badge={link.badge}
-                  gradientFrom={link.color.split(' ')[0].replace('from-', '')}
-                  gradientTo={link.color.split(' ')[1].replace('to-', '')}
-                />
-              </Link>
             ))}
           </div>
-        </div>
 
-        {/* Super Admin Section */}
-        {isSuperAdmin && (
-          <div>
-            <h2 className={cn('text-base md:text-lg font-semibold mb-3 flex items-center gap-2 text-red-600', isRTL && 'font-arabic')}>
-              <Crown className="h-4 w-4 md:h-5 md:w-5" />
-              {isRTL ? 'تحكم المشرف الرئيسي' : 'Super Admin'}
-              <Badge variant="destructive" className="text-[10px] h-5">
-                {isRTL ? 'صلاحيات عليا' : 'Elevated'}
-              </Badge>
+          {/* Widgets Grid */}
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+            {[
+              <WidgetCard key="users" title={isRTL ? 'المستخدمون' : 'Users'} icon={<Users />} color="blue">
+                <div className="space-y-1.5">
+                  {[
+                    { label: isRTL ? 'المسافرون' : 'Travelers', val: stats.totalTravelers },
+                    { label: isRTL ? 'مقدمو الخدمات' : 'Providers', val: stats.totalProviders },
+                    { label: isRTL ? 'الوكلاء' : 'Vendors', val: stats.totalVendors },
+                  ].map(r => (
+                    <div key={r.label} className="flex justify-between text-xs">
+                      <span>{r.label}</span><span className="font-bold">{r.val}</span>
+                    </div>
+                  ))}
+                </div>
+              </WidgetCard>,
+
+              <WidgetCard key="kyc" title={isRTL ? 'طابور التحقق' : 'KYC Queue'} icon={<Shield />} color="yellow">
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-xs">
+                    <span>{isRTL ? 'قيد الانتظار' : 'Pending'}</span>
+                    <Badge variant="outline" className="h-5 text-[10px]">{stats.pendingKyc}</Badge>
+                  </div>
+                  <div className="flex justify-between text-xs pt-1.5 border-t">
+                    <span className="text-green-600">{isRTL ? 'موافق' : 'Approved'}</span>
+                    <span className="font-bold text-green-600">{charityStats.approvedKyc}</span>
+                  </div>
+                </div>
+              </WidgetCard>,
+
+              <WidgetCard key="bookings" title={isRTL ? 'الحجوزات' : 'Bookings'} icon={<Calendar />} color="primary">
+                <div className="text-center">
+                  <p className="text-2xl md:text-3xl font-bold">{stats.totalBookings}</p>
+                  <p className="text-[10px] text-muted-foreground">{isRTL ? 'إجمالي الحجوزات' : 'Total Bookings'}</p>
+                  <div className="grid grid-cols-3 gap-1 mt-2 text-[10px]">
+                    <div><p className="font-bold text-yellow-500">{stats.pendingBookings}</p><p className="text-muted-foreground">{isRTL ? 'معلق' : 'Pending'}</p></div>
+                    <div><p className="font-bold text-blue-500">{charityStats.activeBookings}</p><p className="text-muted-foreground">{isRTL ? 'جارٍ' : 'Active'}</p></div>
+                    <div><p className="font-bold text-green-500">{stats.completedBookings}</p><p className="text-muted-foreground">{isRTL ? 'مكتمل' : 'Done'}</p></div>
+                  </div>
+                </div>
+              </WidgetCard>,
+
+              <WidgetCard key="revenue" title={isRTL ? 'الإيرادات' : 'Revenue'} icon={<TrendingUp />} color="green">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">{isRTL ? 'إجمالي التبرعات' : 'Total Donations'}</p>
+                  <p className="text-lg md:text-xl font-bold text-green-500">
+                    {stats.donationAmount.toLocaleString()} <span className="text-[10px]">{isRTL ? 'ر.س' : 'SAR'}</span>
+                  </p>
+                </div>
+              </WidgetCard>,
+
+              <WidgetCard key="charity" title={isRTL ? 'الصدقات' : 'Charity'} icon={<Heart />} color="red">
+                <div className="grid grid-cols-2 gap-2 text-center">
+                  <div><p className="text-lg font-bold">{charityStats.requests}</p><p className="text-[10px] text-muted-foreground">{isRTL ? 'الطلبات' : 'Requests'}</p></div>
+                  <div><p className="text-lg font-bold text-green-500">{charityStats.fulfilled}</p><p className="text-[10px] text-muted-foreground">{isRTL ? 'مُنجز' : 'Fulfilled'}</p></div>
+                </div>
+              </WidgetCard>,
+
+              <WidgetCard key="system" title={isRTL ? 'صحة النظام' : 'System'} icon={<BarChart3 />} color="purple">
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-xs">
+                    <span>{isRTL ? 'وقت التشغيل' : 'Uptime'}</span>
+                    <Badge className="bg-green-500 h-5 text-[10px]">99.9%</Badge>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span>{isRTL ? 'معدل الخطأ' : 'Error Rate'}</span>
+                    <span className="font-bold text-green-500">0%</span>
+                  </div>
+                </div>
+              </WidgetCard>,
+            ].map((widget, i) => (
+              <div key={i} className="animate-fade-in" style={{ animationDelay: `${250 + i * 40}ms` }}>
+                {widget}
+              </div>
+            ))}
+          </div>
+
+          {/* Quick Links */}
+          <div className="animate-fade-in" style={{ animationDelay: '500ms' }}>
+            <h2 className={cn('text-base md:text-lg font-semibold mb-3 flex items-center gap-2', isRTL && 'font-arabic')}>
+              <TrendingUp className="h-4 w-4 text-primary" />
+              {isRTL ? 'الإدارة والعمليات' : 'Management'}
             </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-3">
-              {superAdminLinks.map((link, index) => (
-                <Link key={index} to={link.href}>
-                  <Card className="h-full hover:shadow-lg transition-all cursor-pointer border-2 border-red-200 dark:border-red-800 hover:border-red-500 group bg-gradient-to-br from-red-50/50 to-pink-50/50 dark:from-red-950/30 dark:to-pink-950/30 active:scale-[0.98]">
-                    <CardContent className="p-3 md:pt-6 md:p-4">
-                      <div className="flex flex-col items-center text-center gap-2">
-                        <div className="p-2 md:p-3 rounded-xl bg-gradient-to-br from-red-500 to-pink-500 text-white shadow-lg group-hover:scale-105 transition-transform">
-                          {link.icon}
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-xs md:text-sm text-red-700 dark:text-red-300">{link.title}</h3>
-                          <p className="text-[10px] text-muted-foreground mt-0.5 hidden sm:block">{link.description}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {adminLinks.map((link, i) => (
+                <Link key={i} to={link.href} className="animate-fade-in" style={{ animationDelay: `${550 + i * 30}ms` }}>
+                  <ActionCard
+                    title={link.title}
+                    description={link.description}
+                    icon={link.icon}
+                    badge={link.badge}
+                    gradientFrom={link.color.split(' ')[0].replace('from-', '')}
+                    gradientTo={link.color.split(' ')[1].replace('to-', '')}
+                  />
                 </Link>
               ))}
             </div>
           </div>
-        )}
 
-        {/* Recent Activity - Wired to audit_logs */}
-        <Card className="border-2">
-          <CardHeader className="p-3 md:p-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-t-lg">
-            <CardTitle className="flex items-center gap-2 text-sm md:text-base">
-              <Clock className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
-              {isRTL ? 'النشاط الأخير' : 'Recent Activity'}
-            </CardTitle>
-            <CardDescription className="text-xs">
-              {isRTL ? 'آخر الأحداث' : 'Latest events'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-4 md:p-6">
-            {logsLoading ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="h-12 rounded-lg bg-muted animate-pulse" />
+          {/* Super Admin Section */}
+          {isSuperAdmin && (
+            <div className="animate-fade-in" style={{ animationDelay: '700ms' }}>
+              <h2 className={cn('text-base md:text-lg font-semibold mb-3 flex items-center gap-2 text-red-600', isRTL && 'font-arabic')}>
+                <Crown className="h-4 w-4" />
+                {isRTL ? 'تحكم المشرف الرئيسي' : 'Super Admin'}
+                <Badge variant="destructive" className="text-[10px] h-5">{isRTL ? 'صلاحيات عليا' : 'Elevated'}</Badge>
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                {superAdminLinks.map((link, i) => (
+                  <Link key={i} to={link.href} className="animate-fade-in" style={{ animationDelay: `${750 + i * 40}ms` }}>
+                    <Card className="h-full hover:shadow-lg transition-all cursor-pointer border-2 border-red-200 dark:border-red-800 hover:border-red-500 group bg-gradient-to-br from-red-50/50 to-pink-50/50 dark:from-red-950/30 dark:to-pink-950/30 active:scale-[0.98]">
+                      <CardContent className="p-3 md:p-4">
+                        <div className="flex flex-col items-center text-center gap-2">
+                          <div className="p-2 rounded-xl bg-gradient-to-br from-red-500 to-pink-500 text-white shadow-lg group-hover:scale-105 transition-transform">
+                            {link.icon}
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-xs md:text-sm text-red-700 dark:text-red-300">{link.title}</h3>
+                            <p className="text-[10px] text-muted-foreground mt-0.5 hidden sm:block">{link.description}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
                 ))}
               </div>
-            ) : recentLogs.length > 0 ? (
-              <div className="space-y-2">
-                {recentLogs.slice(0, 8).map((log) => (
-                  <div key={log.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
-                    <div className={cn(
-                      "p-1.5 rounded-lg shrink-0",
-                      log.action.includes('create') ? 'bg-emerald-500/10 text-emerald-600' :
-                      log.action.includes('update') ? 'bg-blue-500/10 text-blue-600' :
-                      log.action.includes('delete') ? 'bg-red-500/10 text-red-600' :
-                      'bg-muted text-muted-foreground'
-                    )}>
-                      <Activity className="h-3.5 w-3.5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium truncate">
-                        {log.action.replace(/_/g, ' ')} — {log.entity_type}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {log.actor_role || 'system'} • {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
-                      </p>
-                    </div>
+            </div>
+          )}
+
+          {/* Recent Activity */}
+          <div className="animate-fade-in" style={{ animationDelay: '850ms' }}>
+            <Card className="border-2">
+              <CardHeader className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-t-lg">
+                <CardTitle className="flex items-center gap-2 text-sm md:text-base">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  {isRTL ? 'النشاط الأخير' : 'Recent Activity'}
+                </CardTitle>
+                <CardDescription className="text-xs">{isRTL ? 'آخر الأحداث' : 'Latest events'}</CardDescription>
+              </CardHeader>
+              <CardContent className="p-4">
+                {logsLoading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map(i => <div key={i} className="h-12 rounded-lg bg-muted animate-pulse" />)}
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-6 md:py-8 text-center text-muted-foreground">
-                <div className="p-3 md:p-4 rounded-full bg-muted mb-3">
-                  <Calendar className="h-6 w-6 md:h-8 md:w-8 opacity-50" />
-                </div>
-                <p className="font-medium text-sm">{isRTL ? 'لا يوجد نشاط حديث' : 'No recent activity'}</p>
-                <p className="text-xs mt-1">{isRTL ? 'ستظهر الأحداث الجديدة هنا' : 'New events will appear here'}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                ) : recentLogs.length > 0 ? (
+                  <div className="space-y-2">
+                    {recentLogs.slice(0, 8).map(log => (
+                      <div key={log.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                        <div className={cn(
+                          "p-1.5 rounded-lg shrink-0",
+                          log.action.includes('create') ? 'bg-emerald-500/10 text-emerald-600' :
+                          log.action.includes('update') ? 'bg-blue-500/10 text-blue-600' :
+                          log.action.includes('delete') ? 'bg-red-500/10 text-red-600' :
+                          'bg-muted text-muted-foreground'
+                        )}>
+                          <Activity className="h-3.5 w-3.5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium truncate">{log.action.replace(/_/g, ' ')} — {log.entity_type}</p>
+                          <p className="text-[10px] text-muted-foreground">{log.actor_role || 'system'} • {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
+                    <div className="p-3 rounded-full bg-muted mb-3">
+                      <Calendar className="h-6 w-6 opacity-50" />
+                    </div>
+                    <p className="font-medium text-sm">{isRTL ? 'لا يوجد نشاط حديث' : 'No recent activity'}</p>
+                    <p className="text-xs mt-1">{isRTL ? 'ستظهر الأحداث الجديدة هنا' : 'New events will appear here'}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </PullToRefresh>
     </DashboardLayout>
