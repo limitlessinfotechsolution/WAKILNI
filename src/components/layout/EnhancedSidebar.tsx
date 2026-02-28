@@ -4,7 +4,7 @@ import {
   Home, Calendar, Users, FileText, Star, Settings, ChevronLeft, ChevronRight,
   CreditCard, Building2, Shield, UserCheck, BarChart3, DollarSign,
   Clock, Heart, CalendarClock, LogOut, ChevronDown, Image, Zap,
-  LayoutGrid, Briefcase, Activity
+  LayoutGrid, Briefcase, Activity, MessageSquare, ClipboardCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/i18n';
@@ -43,6 +43,7 @@ const travelerNavGroups: NavGroup[] = [
       { title: 'Dashboard', titleAr: 'لوحة التحكم', href: '/dashboard', icon: Home },
       { title: 'Bookings', titleAr: 'الحجوزات', href: '/bookings', icon: Calendar },
       { title: 'Services', titleAr: 'الخدمات', href: '/services', icon: FileText },
+      { title: 'Messages', titleAr: 'الرسائل', href: '/messages', icon: MessageSquare },
     ],
   },
   {
@@ -65,6 +66,7 @@ const providerNavGroups: NavGroup[] = [
       { title: 'Dashboard', titleAr: 'لوحة التحكم', href: '/provider', icon: Home },
       { title: 'Calendar', titleAr: 'التقويم', href: '/provider/calendar', icon: Calendar },
       { title: 'Availability', titleAr: 'التوفر', href: '/provider/availability', icon: CalendarClock },
+      { title: 'Messages', titleAr: 'الرسائل', href: '/messages', icon: MessageSquare },
     ],
   },
   {
@@ -96,6 +98,7 @@ const vendorNavGroups: NavGroup[] = [
       { title: 'Dashboard', titleAr: 'لوحة التحكم', href: '/vendor', icon: Home },
       { title: 'Bookings', titleAr: 'الحجوزات', href: '/vendor/bookings', icon: Calendar },
       { title: 'Services', titleAr: 'الخدمات', href: '/vendor/services', icon: FileText },
+      { title: 'Messages', titleAr: 'الرسائل', href: '/messages', icon: MessageSquare },
     ],
   },
   {
@@ -134,6 +137,7 @@ const adminNavGroups: NavGroup[] = [
     collapsible: true,
     items: [
       { title: 'KYC Queue', titleAr: 'طابور التحقق', href: '/admin/kyc', icon: Shield, badge: '3', badgeVariant: 'destructive' },
+      { title: 'Service Moderation', titleAr: 'مراجعة الخدمات', href: '/admin/services-moderation', icon: ClipboardCheck },
       { title: 'Subscriptions', titleAr: 'الاشتراكات', href: '/admin/subscriptions', icon: CreditCard },
       { title: 'Allocations', titleAr: 'التخصيصات', href: '/admin/allocations', icon: BarChart3 },
     ],

@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Home, Calendar, Plus, User, Settings,
   LayoutDashboard, Briefcase, Users, Star, Package,
-  ShieldCheck, Activity, LucideIcon
+  ShieldCheck, Activity, LucideIcon, MessageSquare
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
@@ -22,7 +22,7 @@ const TRAVELER_TABS: TabItem[] = [
   { icon: Home, label: 'Home', labelAr: 'الرئيسية', path: '/dashboard' },
   { icon: Calendar, label: 'Bookings', labelAr: 'الحجوزات', path: '/bookings' },
   { icon: Plus, label: 'Book', labelAr: 'حجز', path: '/bookings/new', isCenter: true },
-  { icon: Users, label: 'Family', labelAr: 'العائلة', path: '/beneficiaries' },
+  { icon: MessageSquare, label: 'Messages', labelAr: 'الرسائل', path: '/messages' },
   { icon: User, label: 'Profile', labelAr: 'الملف', path: '/settings/profile' },
 ];
 

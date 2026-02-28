@@ -102,6 +102,32 @@ export default function ProfileSettingsPage() {
     push_system: true,
   });
 
+  // Load notification preferences from DB
+  useEffect(() => {
+    if (!user) return;
+    const loadPrefs = async () => {
+      const { data } = await supabase
+        .from('notification_preferences')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (data) {
+        setNotificationPrefs({
+          email_bookings: data.email_bookings ?? true,
+          email_kyc: data.email_kyc ?? true,
+          email_messages: data.email_messages ?? true,
+          email_marketing: data.email_marketing ?? false,
+          push_bookings: data.push_bookings ?? true,
+          push_kyc: data.push_kyc ?? true,
+          push_messages: data.push_messages ?? true,
+          push_reviews: data.push_reviews ?? true,
+          push_system: data.push_system ?? true,
+        });
+      }
+    };
+    loadPrefs();
+  }, [user]);
+
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
@@ -167,14 +193,34 @@ export default function ProfileSettingsPage() {
   };
 
   const handleSaveNotificationPrefs = async () => {
+    if (!user) return;
     setIsSavingNotifications(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
-    haptics.success();
-    toast({
-      title: isRTL ? 'تم الحفظ' : 'Saved',
-      description: isRTL ? 'تم حفظ تفضيلات الإشعارات' : 'Notification preferences saved.',
-    });
-    setIsSavingNotifications(false);
+    try {
+      const { error } = await supabase
+        .from('notification_preferences')
+        .upsert({
+          user_id: user.id,
+          ...notificationPrefs,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id' });
+
+      if (error) throw error;
+      haptics.success();
+      toast({
+        title: isRTL ? 'تم الحفظ' : 'Saved',
+        description: isRTL ? 'تم حفظ تفضيلات الإشعارات' : 'Notification preferences saved.',
+      });
+    } catch (error) {
+      console.error('Error saving notification preferences:', error);
+      haptics.error();
+      toast({
+        title: isRTL ? 'خطأ' : 'Error',
+        description: isRTL ? 'فشل في حفظ التفضيلات' : 'Failed to save preferences.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSavingNotifications(false);
+    }
   };
 
   const handleToggleWithHaptic = (checked: boolean, key: keyof NotificationPreferences) => {

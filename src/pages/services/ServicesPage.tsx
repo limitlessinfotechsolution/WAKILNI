@@ -17,8 +17,10 @@ import { useLanguage } from '@/lib/i18n';
 import { useServices, ServiceType } from '@/hooks/useServices';
 import { useAuth } from '@/lib/auth';
 import { useHaptics } from '@/hooks/useHaptics';
+import { useWishlist } from '@/hooks/useWishlist';
 import { GlassCard, GlassCardContent, GlassCardHeader } from '@/components/cards/GlassCard';
 import { FloatingActionButton } from '@/components/navigation/FloatingActionButton';
+import { ServiceComparisonModal } from '@/components/services/ServiceComparisonModal';
 import { cn } from '@/lib/utils';
 
 type SortOption = 'price_asc' | 'price_desc' | 'rating' | 'reviews' | 'duration';
@@ -37,8 +39,9 @@ export default function ServicesPage() {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 50000]);
   const [minRating, setMinRating] = useState(0);
   const [compareList, setCompareList] = useState<string[]>([]);
-  const [wishlist, setWishlist] = useState<string[]>([]);
+  const { isWishlisted, toggleWishlist } = useWishlist();
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const [showCompareModal, setShowCompareModal] = useState(false);
   
   // Get service type from URL params
   const typeParam = searchParams.get('type') as ServiceType | null;
@@ -112,13 +115,9 @@ export default function ServicesPage() {
     }
   };
 
-  const toggleWishlist = (serviceId: string) => {
+  const handleToggleWishlist = (serviceId: string) => {
     haptics.light();
-    if (wishlist.includes(serviceId)) {
-      setWishlist(prev => prev.filter(id => id !== serviceId));
-    } else {
-      setWishlist(prev => [...prev, serviceId]);
-    }
+    toggleWishlist(serviceId);
   };
 
   const getServiceTypeLabel = (type: ServiceType) => {
@@ -144,7 +143,7 @@ export default function ServicesPage() {
   };
 
   const ServiceCard = ({ service, isCompareSelected }: { service: typeof services[0]; isCompareSelected: boolean }) => {
-    const isWishlisted = wishlist.includes(service.id);
+    const wishlisted = isWishlisted(service.id);
 
     return (
       <GlassCard 
@@ -171,11 +170,11 @@ export default function ServicesPage() {
                 size="icon"
                 className={cn(
                   'shrink-0 h-8 w-8 transition-all',
-                  isWishlisted && 'text-red-500'
+                  wishlisted && 'text-red-500'
                 )}
-                onClick={() => toggleWishlist(service.id)}
+                onClick={() => handleToggleWishlist(service.id)}
               >
-                <Heart className={cn('h-4 w-4', isWishlisted && 'fill-current')} />
+                <Heart className={cn('h-4 w-4', wishlisted && 'fill-current')} />
               </Button>
               {/* Compare Button */}
               <Button
@@ -353,7 +352,7 @@ export default function ServicesPage() {
           
           {/* Compare Button */}
           {compareList.length > 0 && (
-            <Button variant="secondary" className="gap-2">
+            <Button variant="secondary" className="gap-2" onClick={() => setShowCompareModal(true)}>
               <Check className="h-4 w-4" />
               {isRTL ? `مقارنة (${compareList.length})` : `Compare (${compareList.length})`}
             </Button>
@@ -501,6 +500,14 @@ export default function ServicesPage() {
             onClick={() => setMobileFilterOpen(true)}
           />
         </div>
+
+        {/* Comparison Modal */}
+        <ServiceComparisonModal
+          open={showCompareModal}
+          onOpenChange={setShowCompareModal}
+          services={services.filter(s => compareList.includes(s.id))}
+          onRemove={(id) => setCompareList(prev => prev.filter(x => x !== id))}
+        />
       </div>
     </Layout>
   );

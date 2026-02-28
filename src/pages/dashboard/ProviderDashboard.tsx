@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
+import { format } from 'date-fns';
 import { Calendar, FileText, Star, Shield, ArrowRight, ArrowLeft, TrendingUp, TrendingDown, Clock, MapPin, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +9,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { useLanguage } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
 import { useProvider } from '@/hooks/useProvider';
+import { useProviderBookings } from '@/hooks/useProviderBookings';
 import { useProviderReviews } from '@/hooks/useReviews';
 import { useProviderStats } from '@/hooks/useProviderStats';
 import { GlassCard, GlassCardContent, StatCard } from '@/components/cards';
@@ -23,6 +25,7 @@ export default function ProviderDashboard() {
   const { t, isRTL } = useLanguage();
   const { profile } = useAuth();
   const { provider, isLoading: providerLoading } = useProvider();
+  const { bookings: allBookings, isLoading: bookingsLoading } = useProviderBookings();
   const { stats: reviewStats } = useProviderReviews(provider?.id);
   const { isLoading, refresh, finishLoading } = useDashboardRefresh();
   const { 
@@ -39,11 +42,17 @@ export default function ProviderDashboard() {
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
   const TrendIcon = growthPercentage >= 0 ? TrendingUp : TrendingDown;
 
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const todayBookings = useMemo(() => 
+    allBookings.filter(b => b.scheduled_date === todayStr),
+    [allBookings, todayStr]
+  );
+
   useEffect(() => {
-    if (!providerLoading && !statsLoading) {
+    if (!providerLoading && !statsLoading && !bookingsLoading) {
       finishLoading();
     }
-  }, [providerLoading, statsLoading, finishLoading]);
+  }, [providerLoading, statsLoading, bookingsLoading, finishLoading]);
 
   if (isLoading && providerLoading) {
     return (
@@ -251,15 +260,47 @@ export default function ProviderDashboard() {
               </div>
             </CardHeader>
             <CardContent className="p-4 md:p-6 pt-0">
-              <div className="text-center py-8 text-muted-foreground">
-                <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-4">
-                  <Calendar className="h-8 w-8 opacity-50" />
+              {todayBookings.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-4">
+                    <Calendar className="h-8 w-8 opacity-50" />
+                  </div>
+                  <p className="font-medium">{isRTL ? 'لا توجد حجوزات اليوم' : 'No bookings today'}</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {isRTL ? 'ستظهر الحجوزات المجدولة هنا' : 'Scheduled bookings will appear here'}
+                  </p>
                 </div>
-                <p className="font-medium">{isRTL ? 'لا توجد حجوزات اليوم' : 'No bookings today'}</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {isRTL ? 'ستظهر الحجوزات المجدولة هنا' : 'Scheduled bookings will appear here'}
-                </p>
-              </div>
+              ) : (
+                <div className="space-y-3">
+                  {todayBookings.map(booking => (
+                    <Link
+                      key={booking.id}
+                      to={`/bookings/${booking.id}`}
+                      className="flex items-center justify-between p-3 rounded-xl bg-muted/30 hover:bg-muted/60 transition-colors group"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="p-2 rounded-lg bg-primary/10 shrink-0">
+                          <Calendar className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className={cn('font-medium text-sm truncate', isRTL && 'font-arabic')}>
+                            {isRTL && booking.service?.title_ar ? booking.service.title_ar : booking.service?.title || (isRTL ? 'خدمة' : 'Service')}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {booking.beneficiary?.full_name || (isRTL ? 'مستفيد' : 'Beneficiary')}
+                          </p>
+                        </div>
+                      </div>
+                      <Badge
+                        variant={booking.status === 'completed' ? 'default' : booking.status === 'in_progress' ? 'secondary' : 'outline'}
+                        className="shrink-0 text-[10px]"
+                      >
+                        {booking.status}
+                      </Badge>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </GlassCard>
 

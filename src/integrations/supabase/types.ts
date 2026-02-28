@@ -478,6 +478,51 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          email_bookings: boolean | null
+          email_kyc: boolean | null
+          email_marketing: boolean | null
+          email_messages: boolean | null
+          id: string
+          push_bookings: boolean | null
+          push_kyc: boolean | null
+          push_messages: boolean | null
+          push_reviews: boolean | null
+          push_system: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          email_bookings?: boolean | null
+          email_kyc?: boolean | null
+          email_marketing?: boolean | null
+          email_messages?: boolean | null
+          id?: string
+          push_bookings?: boolean | null
+          push_kyc?: boolean | null
+          push_messages?: boolean | null
+          push_reviews?: boolean | null
+          push_system?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          email_bookings?: boolean | null
+          email_kyc?: boolean | null
+          email_marketing?: boolean | null
+          email_messages?: boolean | null
+          id?: string
+          push_bookings?: boolean | null
+          push_kyc?: boolean | null
+          push_messages?: boolean | null
+          push_reviews?: boolean | null
+          push_system?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       notification_queue: {
         Row: {
           body: string
@@ -1581,6 +1626,35 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      wishlists: {
+        Row: {
+          created_at: string | null
+          id: string
+          service_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          service_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          service_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wishlists_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
