@@ -50,6 +50,8 @@ import ProviderProfilePage from "./pages/providers/ProviderProfilePage";
 import InstallPage from "./pages/pwa/InstallPage";
 import CertificateVerificationPage from "./pages/verify/CertificateVerificationPage";
 import ScholarVerificationPage from "./pages/admin/ScholarVerificationPage";
+import InboxPage from "./pages/messages/InboxPage";
+import ServiceModerationPage from "./pages/admin/ServiceModerationPage";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1 } },
@@ -144,6 +146,9 @@ function AppRoutes() {
       <Route path="/bookings/:id" element={<ProtectedRoute><BookingDetailPage /></ProtectedRoute>} />
       <Route path="/services" element={<ServicesPage />} />
       
+      {/* Messages */}
+      <Route path="/messages" element={<ProtectedRoute><InboxPage /></ProtectedRoute>} />
+      
       {/* Settings Routes */}
       <Route path="/settings/profile" element={<ProtectedRoute><ProfileSettingsPage /></ProtectedRoute>} />
       
@@ -176,6 +181,7 @@ function AppRoutes() {
       <Route path="/admin/donations" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><DonationsPage /></ProtectedRoute>} />
       <Route path="/admin/allocations" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><BookingAllocationPage /></ProtectedRoute>} />
       <Route path="/admin/subscriptions" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><SubscriptionsPage /></ProtectedRoute>} />
+      <Route path="/admin/services-moderation" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><ServiceModerationPage /></ProtectedRoute>} />
       
       {/* Super Admin Routes */}
       <Route path="/super-admin/settings" element={<ProtectedRoute allowedRoles={['super_admin']}><SystemSettingsPage /></ProtectedRoute>} />
