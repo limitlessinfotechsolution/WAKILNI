@@ -272,7 +272,7 @@ export function EnhancedSidebar() {
   return (
     <aside
       className={cn(
-        'h-screen sticky top-0 flex flex-col border-e bg-sidebar transition-all duration-300',
+        'h-screen sticky top-0 flex flex-col border-e bg-sidebar transition-all duration-300 ease-out',
         isExpanded ? 'w-64' : 'w-[68px]',
         getRoleThemeClass()
       )}
@@ -335,7 +335,7 @@ export function EnhancedSidebar() {
 
       {/* Navigation */}
       <ScrollArea className="flex-1 py-3">
-        <nav className="px-2 space-y-4">
+        <nav className="px-2 space-y-3">
           {navGroups.map((group, groupIndex) => {
             const groupTitle = isRTL ? group.titleAr : group.title;
             const isGroupExpanded = expandedGroups.includes(group.title) || expandedGroups.includes(group.titleAr);
