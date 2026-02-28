@@ -34,37 +34,45 @@ export function useAdminUsers(roleFilter: RoleFilter = 'all') {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      let query = supabase
+      // Step 1: Fetch user_roles
+      let rolesQuery = supabase
         .from('user_roles')
-        .select(`
-          *,
-          profile:profiles!inner(
-            full_name,
-            full_name_ar,
-            phone,
-            avatar_url,
-            display_id,
-            last_login_at,
-            last_login_device,
-            last_login_location
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (roleFilter !== 'all') {
-        query = query.eq('role', roleFilter);
+        rolesQuery = rolesQuery.eq('role', roleFilter);
       }
 
-      const { data, error } = await query;
+      const { data: rolesData, error: rolesError } = await rolesQuery;
+      if (rolesError) throw rolesError;
 
-      if (error) throw error;
-      
-      const transformedData = (data || []).map(item => ({
-        ...item,
-        profile: Array.isArray(item.profile) ? item.profile[0] : item.profile
+      const roles = rolesData || [];
+      if (roles.length === 0) {
+        setUsers([]);
+        return;
+      }
+
+      // Step 2: Collect user_ids and fetch profiles
+      const userIds = roles.map(r => r.user_id);
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, full_name_ar, phone, avatar_url, display_id, last_login_at, last_login_device, last_login_location')
+        .in('user_id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      // Step 3: Merge profiles into roles
+      const profileMap = new Map(
+        (profilesData || []).map(p => [p.user_id, p])
+      );
+
+      const merged: UserWithRole[] = roles.map(role => ({
+        ...role,
+        profile: profileMap.get(role.user_id) ?? null,
       }));
-      
-      setUsers(transformedData as UserWithRole[]);
+
+      setUsers(merged);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast({
