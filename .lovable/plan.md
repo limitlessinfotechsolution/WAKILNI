@@ -2,26 +2,25 @@
 
 ## Root Cause
 
-The `useAdminUsers` hook joins `user_roles` with `profiles` via `profiles!inner(...)`, but there is **no foreign key relationship** between these two tables. Both have a `user_id` column referencing `auth.users`, but PostgREST cannot resolve an implicit join between them. This causes the PGRST200 error on every admin user management page.
+The `user_roles` table has two **RESTRICTIVE** SELECT policies:
+1. "Admins can view all roles" — `has_role(auth.uid(), 'admin')`
+2. "Users can view their own roles" — `auth.uid() = user_id`
+
+With restrictive (non-permissive) policies, **ALL** must pass simultaneously. An admin must satisfy BOTH conditions, meaning they can only see their own row. This is why only 1 user appears despite 10 existing in the database.
+
+The same issue likely affects `profiles` — its SELECT policy "Users can view profiles of booking participants" is also restrictive, compounding the problem.
 
 ## Fix
 
-**Change `useAdminUsers.ts`** to use two separate queries instead of a join:
+**Database migration** to convert the conflicting policies from RESTRICTIVE to PERMISSIVE:
 
-1. Fetch all `user_roles` (with optional role filter)
-2. Collect all `user_id` values from the result
-3. Fetch matching `profiles` rows using `.in('user_id', userIds)`
-4. Merge profiles into the roles data client-side by matching on `user_id`
+### For `user_roles`:
+- Drop the two restrictive SELECT policies
+- Recreate them as PERMISSIVE — so either condition grants access (OR logic instead of AND)
 
-This avoids the missing FK relationship entirely and follows the existing project pattern noted in memory: "Explicit foreign key hints in queries are avoided to prevent 'Failed to fetch' errors."
+### For `profiles`:
+- Drop the restrictive SELECT policies  
+- Recreate them as PERMISSIVE — so admins/super_admins can see all profiles, and users can see their own + booking participants
 
-No database migration needed — this is a code-only fix.
-
-### Changes
-
-**`src/hooks/useAdminUsers.ts`** — Replace `fetchUsers` function:
-- Query `user_roles` with `select('*')` + optional role filter
-- Extract `user_id` array from results  
-- Query `profiles` with `.in('user_id', userIds)` selecting the needed columns
-- Map profiles by `user_id` and merge into role records
+No code changes needed — the `useAdminUsers` hook logic is correct; it's purely a database policy issue.
 
