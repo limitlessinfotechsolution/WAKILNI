@@ -20,12 +20,12 @@ import { Progress } from '@/components/ui/progress';
 
 const PRESET_AMOUNTS = [50, 100, 250, 500, 1000, 5000];
 
-// Mock stats for demonstration
-const CHARITY_STATS = {
-  totalRaised: 125750,
+// Default stats - will be replaced by real data
+const DEFAULT_CHARITY_STATS = {
+  totalRaised: 0,
   goal: 500000,
-  beneficiariesHelped: 48,
-  activeRequests: 12,
+  beneficiariesHelped: 0,
+  activeRequests: 0,
 };
 
 // Animated counter hook
@@ -73,15 +73,35 @@ export default function DonatePage() {
   const [isComplete, setIsComplete] = useState(false);
   const [isRecurring, setIsRecurring] = useState(false);
   const [activeTab, setActiveTab] = useState('donate');
+  const [charityStats, setCharityStats] = useState(DEFAULT_CHARITY_STATS);
   
   // Zakat calculator state
   const [wealth, setWealth] = useState<number>(0);
   const zakatAmount = wealth * 0.025; // 2.5% Zakat
 
+  // Fetch real donation stats
+  useEffect(() => {
+    const fetchStats = async () => {
+      const [donationsRes, requestsRes, fulfilledRes] = await Promise.all([
+        supabase.from('donations').select('amount').eq('payment_status', 'completed'),
+        supabase.from('charity_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('charity_requests').select('*', { count: 'exact', head: true }).eq('status', 'approved'),
+      ]);
+      const totalRaised = donationsRes.data?.reduce((sum, d) => sum + (d.amount || 0), 0) || 0;
+      setCharityStats({
+        totalRaised,
+        goal: DEFAULT_CHARITY_STATS.goal,
+        beneficiariesHelped: fulfilledRes.count || 0,
+        activeRequests: requestsRes.count || 0,
+      });
+    };
+    fetchStats();
+  }, []);
+
   // Animated counters
-  const animatedTotal = useAnimatedCounter(CHARITY_STATS.totalRaised);
-  const animatedBeneficiaries = useAnimatedCounter(CHARITY_STATS.beneficiariesHelped);
-  const animatedRequests = useAnimatedCounter(CHARITY_STATS.activeRequests);
+  const animatedTotal = useAnimatedCounter(charityStats.totalRaised);
+  const animatedBeneficiaries = useAnimatedCounter(charityStats.beneficiariesHelped);
+  const animatedRequests = useAnimatedCounter(charityStats.activeRequests);
 
   // Conditional layout based on auth status
   const Layout = user ? DashboardLayout : MainLayout;
@@ -163,7 +183,7 @@ export default function DonatePage() {
     }
   };
 
-  const progressPercentage = Math.min((CHARITY_STATS.totalRaised / CHARITY_STATS.goal) * 100, 100);
+  const progressPercentage = Math.min((charityStats.totalRaised / charityStats.goal) * 100, 100);
 
   if (isComplete) {
     return (
@@ -283,7 +303,7 @@ export default function DonatePage() {
                 {isRTL ? 'التقدم نحو الهدف' : 'Progress to Goal'}
               </span>
               <span className="text-sm text-muted-foreground">
-                {CHARITY_STATS.totalRaised.toLocaleString()} / {CHARITY_STATS.goal.toLocaleString()} {isRTL ? 'ر.س' : 'SAR'}
+                {charityStats.totalRaised.toLocaleString()} / {charityStats.goal.toLocaleString()} {isRTL ? 'ر.س' : 'SAR'}
               </span>
             </div>
             <Progress value={progressPercentage} className="h-3" />

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { 
   Users, Calendar, Heart, Shield, Settings, FileText, TrendingUp, Building2, 
   Crown, CreditCard, BarChart3, Clock, Sparkles, Activity, AlertCircle, CheckCircle2, Zap
@@ -18,12 +18,33 @@ import { AdminDashboardSkeleton } from '@/components/dashboard/DashboardSkeleton
 import { useDashboardRefresh } from '@/hooks/useDashboardRefresh';
 import { GlassCard } from '@/components/cards';
 import { Progress } from '@/components/ui/progress';
+import { useAuditLogs } from '@/hooks/useAuditLogs';
+import { supabase } from '@/integrations/supabase/client';
+import { formatDistanceToNow } from 'date-fns';
 
 export default function AdminDashboard() {
   const { isRTL } = useLanguage();
   const { stats, isLoading: statsLoading } = useAdminStats();
   const { isSuperAdmin, profile } = useAuth();
   const { isLoading, refresh, finishLoading } = useDashboardRefresh();
+  const { logs: recentLogs, isLoading: logsLoading } = useAuditLogs({ limit: 10 });
+  const [charityStats, setCharityStats] = useState({ requests: 0, fulfilled: 0, approvedKyc: 0 });
+
+  useEffect(() => {
+    const fetchExtraStats = async () => {
+      const [charityRes, fulfilledRes, approvedKycRes] = await Promise.all([
+        supabase.from('charity_requests').select('*', { count: 'exact', head: true }),
+        supabase.from('charity_requests').select('*', { count: 'exact', head: true }).eq('status', 'approved'),
+        supabase.from('providers').select('*', { count: 'exact', head: true }).eq('kyc_status', 'approved'),
+      ]);
+      setCharityStats({
+        requests: charityRes.count || 0,
+        fulfilled: fulfilledRes.count || 0,
+        approvedKyc: approvedKycRes.count || 0,
+      });
+    };
+    fetchExtraStats();
+  }, []);
 
   useEffect(() => {
     if (!statsLoading) {
@@ -241,7 +262,7 @@ export default function AdminDashboard() {
               </div>
               <div className="flex justify-between text-xs pt-1.5 border-t">
                 <span className="text-green-600">{isRTL ? 'موافق' : 'Approved'}</span>
-                <span className="font-bold text-green-600">0</span>
+                <span className="font-bold text-green-600">{charityStats.approvedKyc}</span>
               </div>
             </div>
           </WidgetCard>
@@ -279,11 +300,11 @@ export default function AdminDashboard() {
           <WidgetCard title={isRTL ? 'الصدقات' : 'Charity'} icon={<Heart />} color="red">
             <div className="grid grid-cols-2 gap-2 text-center">
               <div>
-                <p className="text-lg font-bold">0</p>
+                <p className="text-lg font-bold">{charityStats.requests}</p>
                 <p className="text-[10px] text-muted-foreground">{isRTL ? 'الطلبات' : 'Requests'}</p>
               </div>
               <div>
-                <p className="text-lg font-bold text-green-500">0</p>
+                <p className="text-lg font-bold text-green-500">{charityStats.fulfilled}</p>
                 <p className="text-[10px] text-muted-foreground">{isRTL ? 'مُنجز' : 'Fulfilled'}</p>
               </div>
             </div>
@@ -357,7 +378,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Recent Activity - Compact */}
+        {/* Recent Activity - Wired to audit_logs */}
         <Card className="border-2">
           <CardHeader className="p-3 md:p-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-t-lg">
             <CardTitle className="flex items-center gap-2 text-sm md:text-base">
@@ -369,13 +390,45 @@ export default function AdminDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent className="p-4 md:p-6">
-            <div className="flex flex-col items-center justify-center py-6 md:py-8 text-center text-muted-foreground">
-              <div className="p-3 md:p-4 rounded-full bg-muted mb-3">
-                <Calendar className="h-6 w-6 md:h-8 md:w-8 opacity-50" />
+            {logsLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="h-12 rounded-lg bg-muted animate-pulse" />
+                ))}
               </div>
-              <p className="font-medium text-sm">{isRTL ? 'لا يوجد نشاط حديث' : 'No recent activity'}</p>
-              <p className="text-xs mt-1">{isRTL ? 'ستظهر الأحداث الجديدة هنا' : 'New events will appear here'}</p>
-            </div>
+            ) : recentLogs.length > 0 ? (
+              <div className="space-y-2">
+                {recentLogs.slice(0, 8).map((log) => (
+                  <div key={log.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                    <div className={cn(
+                      "p-1.5 rounded-lg shrink-0",
+                      log.action.includes('create') ? 'bg-emerald-500/10 text-emerald-600' :
+                      log.action.includes('update') ? 'bg-blue-500/10 text-blue-600' :
+                      log.action.includes('delete') ? 'bg-red-500/10 text-red-600' :
+                      'bg-muted text-muted-foreground'
+                    )}>
+                      <Activity className="h-3.5 w-3.5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium truncate">
+                        {log.action.replace(/_/g, ' ')} — {log.entity_type}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {log.actor_role || 'system'} • {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-6 md:py-8 text-center text-muted-foreground">
+                <div className="p-3 md:p-4 rounded-full bg-muted mb-3">
+                  <Calendar className="h-6 w-6 md:h-8 md:w-8 opacity-50" />
+                </div>
+                <p className="font-medium text-sm">{isRTL ? 'لا يوجد نشاط حديث' : 'No recent activity'}</p>
+                <p className="text-xs mt-1">{isRTL ? 'ستظهر الأحداث الجديدة هنا' : 'New events will appear here'}</p>
+              </div>
+            )}
           </CardContent>
         </Card>
         </div>

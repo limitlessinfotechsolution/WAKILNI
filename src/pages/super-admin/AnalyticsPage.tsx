@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { useLanguage } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
@@ -22,6 +23,8 @@ import { GlassCard, GlassCardContent, GlassCardHeader } from '@/components/cards
 import { SparklineChart } from '@/components/data-display/SparklineChart';
 import { RingChart } from '@/components/data-display/RingChart';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { useAdminStats } from '@/hooks/useAdminStats';
 
 // Mock data - in production, this would come from hooks
 const mockBookingTrends = [
@@ -56,6 +59,86 @@ export default function SuperAdminAnalyticsPage() {
   const { isRTL } = useLanguage();
   const { isSuperAdmin } = useAuth();
   const navigate = useNavigate();
+  const { stats, isLoading: statsLoading } = useAdminStats();
+
+  // Real data from DB
+  const [analyticsData, setAnalyticsData] = useState({
+    bookingTrends: [] as { date: string; bookings: number }[],
+    revenueData: [] as { name: string; value: number }[],
+    userGrowth: [] as { date: string; users: number }[],
+    serviceDistribution: { umrah: 0, hajj: 0, ziyarat: 0 },
+    kycStatus: { pending: 0, underReview: 0, approved: 0, rejected: 0 },
+    completionRate: 0,
+  });
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      const [bookingsRes, servicesRes, kycRes, donationsRes] = await Promise.all([
+        supabase.from('bookings').select('status, created_at, total_amount, service_id, services(service_type)'),
+        supabase.from('services').select('service_type, is_active'),
+        supabase.from('providers').select('kyc_status'),
+        supabase.from('donations').select('amount, created_at').eq('payment_status', 'completed'),
+      ]);
+
+      // Booking trends by month
+      const bookingsByMonth: Record<string, number> = {};
+      (bookingsRes.data || []).forEach(b => {
+        const month = new Date(b.created_at).toLocaleString('en', { month: 'short' });
+        bookingsByMonth[month] = (bookingsByMonth[month] || 0) + 1;
+      });
+      const bookingTrends = Object.entries(bookingsByMonth).map(([date, bookings]) => ({ date, bookings }));
+
+      // Revenue by service type
+      const revenueByType: Record<string, number> = {};
+      (bookingsRes.data || []).filter(b => b.status === 'completed').forEach(b => {
+        const svc = Array.isArray(b.services) ? b.services[0] : b.services;
+        const type = (svc as any)?.service_type || 'other';
+        revenueByType[type] = (revenueByType[type] || 0) + (b.total_amount || 0);
+      });
+      const revenueData = Object.entries(revenueByType).map(([name, value]) => ({ 
+        name: name.charAt(0).toUpperCase() + name.slice(1), value 
+      }));
+
+      // Service distribution
+      const svcTypes = (servicesRes.data || []).filter(s => s.is_active);
+      const serviceDistribution = {
+        umrah: svcTypes.filter(s => s.service_type === 'umrah').length,
+        hajj: svcTypes.filter(s => s.service_type === 'hajj').length,
+        ziyarat: svcTypes.filter(s => s.service_type === 'ziyarat').length,
+      };
+
+      // KYC status
+      const kycData = kycRes.data || [];
+      const kycStatus = {
+        pending: kycData.filter(p => p.kyc_status === 'pending').length,
+        underReview: kycData.filter(p => p.kyc_status === 'under_review').length,
+        approved: kycData.filter(p => p.kyc_status === 'approved').length,
+        rejected: kycData.filter(p => p.kyc_status === 'rejected').length,
+      };
+
+      // Completion rate
+      const total = bookingsRes.data?.length || 0;
+      const completed = (bookingsRes.data || []).filter(b => b.status === 'completed').length;
+      const completionRate = total > 0 ? (completed / total) * 100 : 0;
+
+      // Donation-based user growth (approximate)
+      const donationsByMonth: Record<string, number> = {};
+      (donationsRes.data || []).forEach(d => {
+        const month = new Date(d.created_at).toLocaleString('en', { month: 'short' });
+        donationsByMonth[month] = (donationsByMonth[month] || 0) + 1;
+      });
+
+      setAnalyticsData({
+        bookingTrends,
+        revenueData: revenueData.length > 0 ? revenueData : [{ name: 'No data', value: 0 }],
+        userGrowth: Object.entries(donationsByMonth).map(([date, users]) => ({ date, users })),
+        serviceDistribution,
+        kycStatus,
+        completionRate,
+      });
+    };
+    fetchAnalytics();
+  }, []);
 
   if (!isSuperAdmin) {
     return (
@@ -125,8 +208,8 @@ export default function SuperAdminAnalyticsPage() {
               <SparklineChart data={revenueSparkline} width={60} height={24} color="hsl(var(--primary))" />
             </div>
             <p className="text-xs text-muted-foreground">{isRTL ? 'إجمالي الإيرادات' : 'Total Revenue'}</p>
-            <p className="text-xl font-bold">135,000 SAR</p>
-            <p className="text-xs text-emerald-600">+12.5% {isRTL ? 'من الشهر الماضي' : 'from last month'}</p>
+            <p className="text-xl font-bold">{(stats.donationAmount || 0).toLocaleString()} SAR</p>
+            <p className="text-xs text-emerald-600">{isRTL ? 'من المعاملات' : 'from transactions'}</p>
           </GlassCard>
 
           <GlassCard className="p-4">
@@ -137,8 +220,8 @@ export default function SuperAdminAnalyticsPage() {
               <SparklineChart data={usersSparkline} width={60} height={24} color="hsl(147 76% 48%)" />
             </div>
             <p className="text-xs text-muted-foreground">{isRTL ? 'المستخدمون النشطون' : 'Active Users'}</p>
-            <p className="text-xl font-bold">1,248</p>
-            <p className="text-xs text-emerald-600">+8.2% {isRTL ? 'من الأسبوع الماضي' : 'from last week'}</p>
+            <p className="text-xl font-bold">{stats.totalTravelers + stats.totalProviders + stats.totalVendors}</p>
+            <p className="text-xs text-emerald-600">{isRTL ? 'إجمالي المسجلين' : 'total registered'}</p>
           </GlassCard>
 
           <GlassCard className="p-4">
@@ -149,8 +232,8 @@ export default function SuperAdminAnalyticsPage() {
               <RingChart value={94.7} size={40} strokeWidth={6} showValue={false} />
             </div>
             <p className="text-xs text-muted-foreground">{isRTL ? 'معدل الإتمام' : 'Completion Rate'}</p>
-            <p className="text-xl font-bold">94.7%</p>
-            <p className="text-xs text-emerald-600">+2.1% {isRTL ? 'تحسن' : 'improvement'}</p>
+            <p className="text-xl font-bold">{analyticsData.completionRate.toFixed(1)}%</p>
+            <p className="text-xs text-muted-foreground">{isRTL ? 'الحجوزات المكتملة' : 'bookings completed'}</p>
           </GlassCard>
 
           <GlassCard className="p-4">
@@ -161,7 +244,7 @@ export default function SuperAdminAnalyticsPage() {
               <SparklineChart data={bookingsSparkline} width={60} height={24} color="hsl(280 67% 60%)" />
             </div>
             <p className="text-xs text-muted-foreground">{isRTL ? 'طلبات التحقق' : 'KYC Requests'}</p>
-            <p className="text-xl font-bold">23</p>
+            <p className="text-xl font-bold">{analyticsData.kycStatus.pending}</p>
             <p className="text-xs text-amber-600">{isRTL ? 'قيد الانتظار' : 'pending'}</p>
           </GlassCard>
         </div>
@@ -177,18 +260,18 @@ export default function SuperAdminAnalyticsPage() {
           <TabsContent value="overview" className="space-y-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <GlassCard>
-                <BookingTrendsChart data={mockBookingTrends} />
+                <BookingTrendsChart data={analyticsData.bookingTrends.length > 0 ? analyticsData.bookingTrends : [{ date: 'No data', bookings: 0 }]} />
               </GlassCard>
               <GlassCard>
-                <RevenuePieChart data={mockRevenueData} />
+                <RevenuePieChart data={analyticsData.revenueData} />
               </GlassCard>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <GlassCard>
-                <ServiceDistributionChart umrah={156} hajj={89} ziyarat={45} />
+                <ServiceDistributionChart umrah={analyticsData.serviceDistribution.umrah} hajj={analyticsData.serviceDistribution.hajj} ziyarat={analyticsData.serviceDistribution.ziyarat} />
               </GlassCard>
               <GlassCard>
-                <KycStatusChart pending={23} underReview={8} approved={245} rejected={12} />
+                <KycStatusChart pending={analyticsData.kycStatus.pending} underReview={analyticsData.kycStatus.underReview} approved={analyticsData.kycStatus.approved} rejected={analyticsData.kycStatus.rejected} />
               </GlassCard>
             </div>
           </TabsContent>
@@ -196,7 +279,7 @@ export default function SuperAdminAnalyticsPage() {
           <TabsContent value="users" className="space-y-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <GlassCard>
-                <UserGrowthChart data={mockUserGrowth} />
+                <UserGrowthChart data={analyticsData.userGrowth.length > 0 ? analyticsData.userGrowth : [{ date: 'No data', users: 0 }]} />
               </GlassCard>
               <GlassCard>
                 <GlassCardHeader>
@@ -210,28 +293,28 @@ export default function SuperAdminAnalyticsPage() {
                         <div className="w-3 h-3 rounded-full bg-primary" />
                         <span>{isRTL ? 'المسافرون' : 'Travelers'}</span>
                       </div>
-                      <span className="font-bold">892</span>
+                      <span className="font-bold">{stats.totalTravelers}</span>
                     </div>
                     <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                       <div className="flex items-center gap-3">
                         <div className="w-3 h-3 rounded-full bg-amber-500" />
                         <span>{isRTL ? 'مقدمو الخدمات' : 'Providers'}</span>
                       </div>
-                      <span className="font-bold">156</span>
+                      <span className="font-bold">{stats.totalProviders}</span>
                     </div>
                     <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                       <div className="flex items-center gap-3">
                         <div className="w-3 h-3 rounded-full bg-blue-500" />
                         <span>{isRTL ? 'الوكلاء' : 'Vendors'}</span>
                       </div>
-                      <span className="font-bold">45</span>
+                      <span className="font-bold">{stats.totalVendors}</span>
                     </div>
                     <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                       <div className="flex items-center gap-3">
                         <div className="w-3 h-3 rounded-full bg-purple-500" />
                         <span>{isRTL ? 'المشرفون' : 'Admins'}</span>
                       </div>
-                      <span className="font-bold">5</span>
+                      <span className="font-bold">—</span>
                     </div>
                   </div>
                 </GlassCardContent>

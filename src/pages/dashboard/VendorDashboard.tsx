@@ -24,9 +24,7 @@ import { PullToRefresh } from '@/components/ui/pull-to-refresh';
 import { VendorDashboardSkeleton } from '@/components/dashboard/DashboardSkeletons';
 import { useDashboardRefresh } from '@/hooks/useDashboardRefresh';
 
-// Mock revenue trend data
-const revenueSparkline = [2500, 3200, 2800, 4100, 3800, 4500, 5200];
-const bookingsSparkline = [12, 18, 15, 22, 19, 25, 28];
+// Sparkline data will be derived from real stats when available
 
 export default function VendorDashboard() {
   const { t, isRTL } = useLanguage();
@@ -134,13 +132,15 @@ export default function VendorDashboard() {
                 <p className="text-2xl md:text-3xl font-bold">
                   SAR {(stats?.totalRevenue || 0).toLocaleString()}
                 </p>
-                <p className="text-xs text-emerald-600 mt-1">
-                  +18% {isRTL ? 'مقارنة بالشهر الماضي' : 'vs last month'}
-                </p>
+                {stats?.totalRevenue > 0 && (
+                  <p className="text-xs text-emerald-600 mt-1">
+                    {isRTL ? 'إجمالي المكتسبات' : 'Total earned'}
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-4">
                 <SparklineChart 
-                  data={revenueSparkline} 
+                  data={[stats?.totalRevenue || 0]} 
                   width={120} 
                   height={50}
                   color="hsl(var(--primary))"
