@@ -1,26 +1,27 @@
 
 
-## Root Cause
+## Problem
 
-The `user_roles` table has two **RESTRICTIVE** SELECT policies:
-1. "Admins can view all roles" — `has_role(auth.uid(), 'admin')`
-2. "Users can view their own roles" — `auth.uid() = user_id`
+The `user_roles` policies use `has_role(auth.uid(), 'admin')` which does **not** match `super_admin` users — they have a different role value. Super admins can only see their own row, and admins cannot see super_admin rows (both sides are broken).
 
-With restrictive (non-permissive) policies, **ALL** must pass simultaneously. An admin must satisfy BOTH conditions, meaning they can only see their own row. This is why only 1 user appears despite 10 existing in the database.
+## Fix — Single Migration
 
-The same issue likely affects `profiles` — its SELECT policy "Users can view profiles of booking participants" is also restrictive, compounding the problem.
+Update two policies on `user_roles` to include `super_admin`:
 
-## Fix
+1. **Drop & recreate "Admins can manage roles"** (ALL) — add `OR has_role(auth.uid(), 'super_admin')`
+2. **Drop & recreate "Admins can view all roles"** (SELECT) — add `OR has_role(auth.uid(), 'super_admin')`
 
-**Database migration** to convert the conflicting policies from RESTRICTIVE to PERMISSIVE:
+```sql
+DROP POLICY "Admins can manage roles" ON public.user_roles;
+CREATE POLICY "Admins can manage roles" ON public.user_roles
+FOR ALL TO authenticated
+USING (has_role(auth.uid(), 'admin') OR has_role(auth.uid(), 'super_admin'));
 
-### For `user_roles`:
-- Drop the two restrictive SELECT policies
-- Recreate them as PERMISSIVE — so either condition grants access (OR logic instead of AND)
+DROP POLICY "Admins can view all roles" ON public.user_roles;
+CREATE POLICY "Admins can view all roles" ON public.user_roles
+FOR SELECT TO authenticated
+USING (has_role(auth.uid(), 'admin') OR has_role(auth.uid(), 'super_admin'));
+```
 
-### For `profiles`:
-- Drop the restrictive SELECT policies  
-- Recreate them as PERMISSIVE — so admins/super_admins can see all profiles, and users can see their own + booking participants
-
-No code changes needed — the `useAdminUsers` hook logic is correct; it's purely a database policy issue.
+No code changes needed. The `profiles` table already has `super_admin` in its SELECT policy, so profile data will load correctly once `user_roles` returns all rows.
 
