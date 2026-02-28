@@ -1,147 +1,149 @@
 
 
-# Advanced Database System Improvements
-
-## Overview
-
-After a thorough audit of the database, here are the critical gaps and improvements needed to bring the system to production-grade quality.
+# Wakilni — Complete Project Audit & Remaining Tasks
 
 ---
 
-## 1. Performance Indexes (Critical)
+## A. MISSING STORAGE BUCKETS
 
-The database is missing indexes on almost every foreign key and frequently-queried column. This means every RLS policy check and every filtered query does a full table scan.
+The code references storage buckets that don't exist in the backend:
 
-**Missing indexes to add:**
+| Bucket | Used In | Status |
+|--------|---------|--------|
+| `avatars` | ProfileSettingsPage avatar upload | **Missing** — uploads silently fail |
+| `documents` | Constants reference | **Missing** |
+| `kyc-documents` | Constants reference | **Missing** |
+| `proof-gallery` | Exists | OK |
+| `service-images` | Exists | OK |
 
-| Table | Column(s) | Reason |
-|-------|-----------|--------|
-| bookings | traveler_id | RLS checks, dashboard queries |
-| bookings | provider_id | RLS checks, provider dashboard |
-| bookings | service_id | Service lookup joins |
-| bookings | status | Filtered queries by status |
-| bookings | scheduled_date | Calendar/date range queries |
-| booking_activities | booking_id | Timeline lookups |
-| messages | sender_id, recipient_id | RLS checks on every message query |
-| messages | booking_id | Conversation thread lookups |
-| messages | is_read | Unread count queries |
-| audit_logs | actor_id | Filter by admin |
-| audit_logs | entity_type, entity_id | Filter by entity |
-| audit_logs | created_at DESC | Chronological listing |
-| beneficiaries | user_id | RLS checks |
-| services | provider_id | Provider service listings |
-| services | service_type | Filter by type |
-| reviews | provider_id | Provider rating queries |
-| reviews | reviewer_id | RLS checks |
-| transactions | user_id | RLS checks |
-| transactions | booking_id | Booking payment lookup |
-| providers | kyc_status | KYC queue filtering |
-| profiles | user_id | Already indexed (unique), good |
-| user_roles | user_id | has_role() function calls on every RLS check |
-| donation_allocations | donation_id, charity_request_id | Allocation joins |
+**Fix**: Create `avatars`, `documents`, and `kyc-documents` storage buckets with appropriate RLS policies.
 
 ---
 
-## 2. Fix Audit Logging (Broken)
+## B. MOCK/HARDCODED DATA (Must Replace with Real Queries)
 
-The `audit_logs` table has **no INSERT RLS policy**, which means every call to `logAuditAction()` from the frontend silently fails. Zero audit records exist in the database.
-
-**Fix:** Add an INSERT policy allowing authenticated admins and super_admins to insert audit logs. Also add a server-side trigger to automatically log critical booking status changes, so audit logging doesn't depend solely on the frontend.
-
----
-
-## 3. Auto-Update Provider Stats via Triggers
-
-Currently, `providers.rating`, `providers.total_reviews`, and `providers.total_bookings` are manually managed and likely out of sync.
-
-**Add triggers to:**
-- Recalculate `rating` and `total_reviews` on reviews INSERT/UPDATE/DELETE
-- Increment `total_bookings` when a booking status changes to 'completed'
+| File | Issue |
+|------|-------|
+| `VendorDashboard.tsx` | Mock sparkline arrays (`revenueSparkline`, `bookingsSparkline`) — hardcoded, not from DB |
+| `VendorDashboard.tsx` | Hardcoded "+18% vs last month" growth |
+| `AnalyticsPage.tsx` | `mockBookingTrends`, `mockRevenueData`, `mockUserGrowth` — entire charts are fake |
+| `DonatePage.tsx` | `CHARITY_STATS` mock object — `totalRaised`, `beneficiariesHelped` are hardcoded |
+| `AdminDashboard.tsx` | "Approved KYC: 0", "Active bookings: 0", "Charity Requests/Fulfilled: 0" — hardcoded zeros instead of real counts |
+| `VendorSubscriptionPage.tsx` | Subscription upgrade is mocked — no real payment integration |
+| `PilgrimCertificationForm.tsx` | Upload handlers are mocked ("will be connected to real storage later") |
 
 ---
 
-## 4. Booking Status Transition Validation
+## C. MISSING EDGE FUNCTIONS / API LOGIC
 
-Currently any status can be changed to any other status. Add a validation trigger to enforce valid transitions:
-
-```text
-pending -> accepted, cancelled
-accepted -> in_progress, cancelled
-in_progress -> completed, disputed
-completed -> (terminal)
-cancelled -> (terminal)
-disputed -> completed, cancelled
-```
-
-This prevents invalid state changes like going from "completed" back to "pending".
+| Feature | Status |
+|---------|--------|
+| **Email notifications** | No email sending — notification_queue table exists but nothing processes it |
+| **Payment gateway** | `process-payment` edge function exists but has no real payment provider (Stripe/Tap) integration |
+| **Subscription billing** | Vendor subscription plans have no payment processing — just updates a DB field |
+| **Data export** | Profile settings "Export Data" button shows a toast but does nothing real |
+| **Account deletion** | "Delete Account" shows a toast but doesn't actually delete anything |
+| **Forgot password** | Page exists — need to verify it actually sends reset emails |
+| **Certificate PDF generation** | `CompletionCertificate` renders in-browser but `downloadDocument.ts` may not produce real PDFs |
 
 ---
 
-## 5. Automatic Booking Activity Logging
+## D. MISSING PAGES / INCOMPLETE SCREENS
 
-Add a trigger on the `bookings` table that automatically inserts a record into `booking_activities` whenever the `status` column changes. This ensures a complete audit trail regardless of which client or edge function made the change.
-
----
-
-## 6. Database Cleanup Functions
-
-Add scheduled-ready cleanup functions:
-- **Expired idempotency keys**: Delete keys older than 24 hours (function exists but no scheduled execution)
-- **Old session cleanup**: Mark sessions older than 30 days as logged out
-- **Stale notification cleanup**: Remove processed notifications older than 90 days
-
-These can be called via a cron edge function later.
+| Page | Issue |
+|------|-------|
+| **Messaging/Chat** | `BookingMessages` component exists, `messages` table exists, but there's no dedicated messaging page or inbox |
+| **Admin Recent Activity** | AdminDashboard shows "No recent activity" — should query `audit_logs` or `booking_activities` |
+| **Provider Today's Schedule** | ProviderDashboard shows "No bookings today" placeholder — should query real bookings by `scheduled_date = today` |
+| **Compare Services** | Compare button on ServicesPage collects IDs but clicking "Compare (N)" does nothing |
+| **Wishlist** | Wishlist toggle on ServicesPage is client-side only — not persisted |
+| **Vendor Team Management** | "Team" link goes to `/vendor/kyc` instead of a dedicated team page |
+| **Provider Gallery** | `GalleryPage` exists but need to verify it's functional with real service images |
 
 ---
 
-## 7. Materialized Stats View for Admin Dashboard
+## E. PROCESS / LOGIC GAPS
 
-Create a materialized view for dashboard statistics to avoid expensive COUNT queries on every admin page load:
-
-```text
-- Total users by role
-- Total bookings by status
-- Revenue totals
-- Active providers count
-- Pending KYC count
-```
+| Process | Gap |
+|---------|-----|
+| **Booking cancellation** | No UI for traveler to cancel a pending booking |
+| **Provider accept/reject** | No UI for provider to accept or reject an assigned booking |
+| **Dispute resolution** | No admin UI to resolve disputed bookings |
+| **Notification preferences** | Save button in settings does a `setTimeout` — not persisted to DB |
+| **Real-time updates** | `messages` table not added to `supabase_realtime` publication — no live chat |
+| **Booking search by provider** | Provider bookings hook `useProviderBookings` may not filter by provider's own bookings correctly |
+| **Service moderation** | Services have `moderation_status` field but no admin moderation queue page |
 
 ---
 
-## Technical Implementation
+## F. DATABASE TRIGGERS NOT DEPLOYED
 
-### Migration SQL Summary
+The audit shows triggers were created in migration SQL, but the `<db-triggers>` section shows: **"There are no triggers in the database."** This means either:
+- Migrations failed silently, OR
+- Triggers were dropped
 
-One migration file containing:
+**Affected triggers that should exist:**
+- `trg_validate_booking_transition` on bookings
+- `trg_log_booking_status_change` on bookings
+- `trg_update_provider_stats` on reviews
+- `trg_rate_limit_bookings` on bookings
+- `trg_rate_limit_messages` on messages
+- `trg_rate_limit_donations` on donations
+- `generate_display_id` on user_roles
 
-1. ~25 CREATE INDEX statements for performance
-2. Updated audit_logs INSERT policy for admins/super_admins + a service-role policy
-3. Trigger function `update_provider_stats()` on reviews table
-4. Trigger function `validate_booking_transition()` on bookings table
-5. Trigger function `log_booking_status_change()` on bookings table
-6. `cleanup_old_data()` function for maintenance
-7. Materialized view `admin_dashboard_stats` with refresh function
+**This is critical** — without these triggers, booking validation, rate limiting, and provider stats are non-functional.
 
-### Frontend Changes
+---
 
-| File | Change |
+## G. UI/UX REMAINING ITEMS
+
+| Item | Detail |
 |------|--------|
-| `src/hooks/useAuditLogger.ts` | No change needed -- it will start working once INSERT policy is added |
-| `src/hooks/useAdminStats.ts` | Update to query from materialized view for faster load |
-| `src/pages/super-admin/AnalyticsPage.tsx` | Minor update to use new stats source |
+| **No loading state on login** | Login redirects but no route-level transition animation |
+| **Password reset flow** | `ForgotPasswordPage` exists but needs end-to-end verification |
+| **Empty service browse** | If no services exist, users see "No Services Available" — need seed data or provider onboarding guidance |
+| **Biometric login** | Button exists on login page but is disabled/visual only |
+| **Dark mode persistence** | Theme toggle exists but verify it persists across sessions |
+| **RTL layout testing** | Arabic layout is implemented but needs thorough end-to-end RTL testing |
 
-### Edge Function (New)
+---
 
-| File | Purpose |
-|------|---------|
-| `supabase/functions/db-maintenance/index.ts` | Calls cleanup functions, can be triggered by cron or manually |
+## H. RECOMMENDED IMPLEMENTATION PRIORITY
 
-### Impact
+### Phase 1 — Critical (Broken/Non-functional)
+1. **Verify and redeploy database triggers** — all rate limiting, validation, and auto-logging are offline
+2. **Create missing storage buckets** (avatars, kyc-documents, documents)
+3. **Replace mock data** in VendorDashboard, AnalyticsPage, DonatePage with real DB queries
+4. **Enable realtime** on messages table for live chat
+5. **Wire Admin Recent Activity** to query audit_logs/booking_activities
 
-- Query performance improvement across all RLS-protected tables (indexes)
-- Audit trail starts actually recording (INSERT policy fix)
-- Provider ratings stay accurate automatically (triggers)
-- Invalid booking state transitions become impossible (validation)
-- Admin dashboard loads faster (materialized view)
-- Database stays clean over time (maintenance functions)
+### Phase 2 — Core Features
+6. **Add booking action buttons** — Provider accept/reject, Traveler cancel
+7. **Build messaging inbox page** — dedicated chat/messages route
+8. **Persist notification preferences** to database
+9. **Wire data export** and account deletion to real backend logic
+10. **Add service moderation queue** for admin
+
+### Phase 3 — Enhancement
+11. **Implement service comparison** modal with side-by-side view
+12. **Add wishlist persistence** to database
+13. **Build vendor team management** page
+14. **Integrate real payment gateway** (Stripe or Tap)
+15. **Add email notification processing** edge function
+
+---
+
+## I. FRONTEND FILE CHANGES SUMMARY
+
+| File | Change Needed |
+|------|--------------|
+| `VendorDashboard.tsx` | Replace mock sparklines with real vendor booking/revenue queries |
+| `AnalyticsPage.tsx` | Replace all mock chart data with real aggregate queries |
+| `DonatePage.tsx` | Query real donation totals from DB |
+| `AdminDashboard.tsx` | Wire "Recent Activity" section to audit_logs |
+| `ProviderDashboard.tsx` | Wire "Today's Schedule" to bookings filtered by today |
+| `ProfileSettingsPage.tsx` | Fix notification prefs save, wire data export and account deletion |
+| `BookingDetailPage.tsx` | Add action buttons (accept/reject/cancel) based on user role and booking status |
+| New: `src/pages/messages/InboxPage.tsx` | Messaging inbox for booking conversations |
+| New: `src/pages/admin/ServiceModerationPage.tsx` | Service approval queue |
 
