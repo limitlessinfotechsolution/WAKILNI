@@ -346,6 +346,26 @@ export default function BookingDetailPage() {
               </GlassCard>
             )}
 
+            {/* Traveler Cancel */}
+            {isTraveler && status === 'pending' && (
+              <GlassCard>
+                <CardHeader className="p-4">
+                  <CardTitle className="text-base">
+                    {isRTL ? 'إجراءات' : 'Actions'}
+                  </CardTitle>
+                </CardHeader>
+                <GlassCardContent className="p-4 pt-0">
+                  <Button 
+                    variant="destructive" 
+                    className="w-full rounded-xl"
+                    onClick={() => handleStatusUpdate('cancelled')}
+                  >
+                    {isRTL ? 'إلغاء الحجز' : 'Cancel Booking'}
+                  </Button>
+                </GlassCardContent>
+              </GlassCard>
+            )}
+
             {/* Status Actions */}
             {canUpdateStatus && status !== 'completed' && status !== 'cancelled' && (
               <GlassCard>
