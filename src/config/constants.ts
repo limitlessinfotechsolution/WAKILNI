@@ -285,9 +285,12 @@ export const STORAGE_BUCKETS = {
 
 export const NOTIFICATION_TYPES = {
   BOOKING_CREATED: 'booking_created',
+  BOOKING_ASSIGNED_TO_VENDOR: 'booking_assigned_to_vendor',
+  BOOKING_ASSIGNED_TO_PROVIDER: 'booking_assigned_to_provider',
   BOOKING_ACCEPTED: 'booking_accepted',
   BOOKING_COMPLETED: 'booking_completed',
   BOOKING_CANCELLED: 'booking_cancelled',
+  BOOKING_REJECTED_BY_PROVIDER: 'booking_rejected_by_provider',
   KYC_APPROVED: 'kyc_approved',
   KYC_REJECTED: 'kyc_rejected',
   NEW_REVIEW: 'new_review',

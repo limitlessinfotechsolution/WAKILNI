@@ -13,13 +13,11 @@ interface CreateBookingRequest {
 }
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Get authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
@@ -28,7 +26,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create Supabase client with user's auth token
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     
@@ -36,7 +33,6 @@ Deno.serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    // Get user from JWT
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
       return new Response(
@@ -45,10 +41,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Parse and validate request body
     const body: CreateBookingRequest = await req.json();
     
-    // Validate required fields
     if (!body.service_id || typeof body.service_id !== 'string') {
       return new Response(
         JSON.stringify({ error: 'Invalid service_id' }),
@@ -63,7 +57,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Validate UUID format
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(body.service_id) || !uuidRegex.test(body.beneficiary_id)) {
       return new Response(
@@ -72,10 +65,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch service details SERVER-SIDE (critical security fix)
+    // Fetch service details — now includes vendor_id
     const { data: service, error: serviceError } = await supabase
       .from('services')
-      .select('id, price, currency, provider_id, is_active')
+      .select('id, price, currency, provider_id, vendor_id, is_active')
       .eq('id', body.service_id)
       .single();
 
@@ -93,7 +86,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Verify beneficiary belongs to user
     const { data: beneficiary, error: beneficiaryError } = await supabase
       .from('beneficiaries')
       .select('id, user_id')
@@ -114,11 +106,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Calculate total amount SERVER-SIDE (5% service fee)
     const SERVICE_FEE_PERCENTAGE = 0.05;
     const calculatedTotal = Number(service.price) * (1 + SERVICE_FEE_PERCENTAGE);
 
-    // Validate scheduled_date if provided
     let scheduledDate: string | null = null;
     if (body.scheduled_date) {
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
@@ -131,26 +121,26 @@ Deno.serve(async (req) => {
       scheduledDate = body.scheduled_date;
     }
 
-    // Sanitize special_requests (limit length, strip HTML)
     let specialRequests: string | null = null;
     if (body.special_requests) {
       const sanitized = String(body.special_requests)
-        .replace(/<[^>]*>/g, '') // Strip HTML tags
+        .replace(/<[^>]*>/g, '')
         .trim()
-        .slice(0, 1000); // Limit to 1000 characters
+        .slice(0, 1000);
       if (sanitized.length > 0) {
         specialRequests = sanitized;
       }
     }
 
-    // Create booking with server-calculated amount
+    // Create booking — NO provider_id at creation, starts as pending for Admin review
+    // vendor_id is stored from the service if present
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
       .insert({
         service_id: service.id,
         beneficiary_id: beneficiary.id,
-        provider_id: service.provider_id,
         traveler_id: user.id,
+        vendor_id: service.vendor_id || null,
         scheduled_date: scheduledDate,
         special_requests: specialRequests,
         total_amount: calculatedTotal,

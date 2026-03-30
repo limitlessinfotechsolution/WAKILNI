@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 
 interface BookingWithDetails {
@@ -11,6 +12,7 @@ interface BookingWithDetails {
   special_requests: string | null;
   created_at: string;
   traveler_id: string | null;
+  vendor_id: string | null;
   service?: {
     id: string;
     title: string;
@@ -28,12 +30,10 @@ interface BookingWithDetails {
     company_name: string | null;
     rating: number | null;
   } | null;
-  allocation?: {
+  vendor?: {
     id: string;
-    status: string | null;
-    allocation_type: string | null;
-    provider_id: string | null;
-    vendor_id: string | null;
+    company_name: string;
+    company_name_ar: string | null;
   } | null;
 }
 
@@ -49,11 +49,22 @@ interface AvailableProvider {
   is_suspended: boolean | null;
 }
 
+interface AvailableVendor {
+  id: string;
+  company_name: string;
+  company_name_ar: string | null;
+  rating: number | null;
+  is_active: boolean | null;
+}
+
 export function useBookingAllocations() {
   const { toast } = useToast();
+  const { role } = useAuth();
   const [pendingBookings, setPendingBookings] = useState<BookingWithDetails[]>([]);
   const [availableProviders, setAvailableProviders] = useState<AvailableProvider[]>([]);
+  const [availableVendors, setAvailableVendors] = useState<AvailableVendor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const isSuperAdmin = role === 'super_admin';
 
   const fetchPendingBookings = async () => {
     try {
@@ -65,30 +76,33 @@ export function useBookingAllocations() {
           beneficiary:beneficiaries(id, full_name, full_name_ar),
           provider:providers(id, company_name, rating)
         `)
-        .in('status', ['pending', 'accepted'])
+        .in('status', ['pending', 'assigned_to_vendor', 'assigned_to_provider', 'accepted'])
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      // Fetch allocations separately
-      const bookingIds = (data || []).map(b => b.id);
-      const { data: allocations } = await supabase
-        .from('service_allocations')
-        .select('*')
-        .in('booking_id', bookingIds);
+      // Fetch vendor details for bookings that have vendor_id
+      const vendorIds = [...new Set((data || []).map(b => b.vendor_id).filter(Boolean))];
+      let vendorMap: Record<string, { id: string; company_name: string; company_name_ar: string | null }> = {};
+      
+      if (vendorIds.length > 0) {
+        const { data: vendors } = await supabase
+          .from('vendors')
+          .select('id, company_name, company_name_ar')
+          .in('id', vendorIds);
+        
+        (vendors || []).forEach(v => { vendorMap[v.id] = v; });
+      }
 
-      const bookingsWithAllocations = (data || []).map(booking => {
-        const allocation = allocations?.find(a => a.booking_id === booking.id);
-        return {
-          ...booking,
-          service: Array.isArray(booking.service) ? booking.service[0] : booking.service,
-          beneficiary: Array.isArray(booking.beneficiary) ? booking.beneficiary[0] : booking.beneficiary,
-          provider: Array.isArray(booking.provider) ? booking.provider[0] : booking.provider,
-          allocation: allocation || null,
-        };
-      });
+      const bookingsWithDetails = (data || []).map(booking => ({
+        ...booking,
+        service: Array.isArray(booking.service) ? booking.service[0] : booking.service,
+        beneficiary: Array.isArray(booking.beneficiary) ? booking.beneficiary[0] : booking.beneficiary,
+        provider: Array.isArray(booking.provider) ? booking.provider[0] : booking.provider,
+        vendor: booking.vendor_id ? vendorMap[booking.vendor_id] || null : null,
+      }));
 
-      setPendingBookings(bookingsWithAllocations);
+      setPendingBookings(bookingsWithDetails);
     } catch (error) {
       console.error('Error fetching pending bookings:', error);
     }
@@ -111,108 +125,125 @@ export function useBookingAllocations() {
     }
   };
 
-  const assignToProvider = async (bookingId: string, providerId: string, notes?: string) => {
+  const fetchAvailableVendors = async () => {
     try {
-      // Check if allocation already exists
-      const { data: existingAlloc } = await supabase
-        .from('service_allocations')
-        .select('id')
-        .eq('booking_id', bookingId)
-        .single();
+      const { data, error } = await supabase
+        .from('vendors')
+        .select('id, company_name, company_name_ar, rating, is_active')
+        .eq('kyc_status', 'approved')
+        .eq('is_active', true)
+        .eq('is_suspended', false)
+        .order('rating', { ascending: false });
 
-      if (existingAlloc) {
-        // Update existing allocation
-        const { error } = await supabase
-          .from('service_allocations')
-          .update({
-            provider_id: providerId,
-            status: 'assigned',
-            allocation_type: 'manual',
-            assigned_at: new Date().toISOString(),
-            notes,
-          })
-          .eq('id', existingAlloc.id);
+      if (error) throw error;
+      setAvailableVendors(data || []);
+    } catch (error) {
+      console.error('Error fetching vendors:', error);
+    }
+  };
 
-        if (error) throw error;
-      } else {
-        // Create new allocation
-        const { error } = await supabase
-          .from('service_allocations')
-          .insert({
-            booking_id: bookingId,
-            provider_id: providerId,
-            status: 'assigned',
-            allocation_type: 'manual',
-            assigned_at: new Date().toISOString(),
-            notes,
-          });
-
-        if (error) throw error;
-      }
-
-      // Update booking provider_id
-      await supabase
+  const assignToVendor = async (bookingId: string, vendorId: string, notes?: string) => {
+    try {
+      // Update booking with vendor_id and status
+      const { error } = await supabase
         .from('bookings')
-        .update({ provider_id: providerId, status: 'accepted' })
+        .update({ vendor_id: vendorId, status: 'assigned_to_vendor' as any })
         .eq('id', bookingId);
 
-      toast({
-        title: 'Success',
-        description: 'Booking assigned to provider',
+      if (error) throw error;
+
+      // Create allocation record
+      await supabase.from('service_allocations').insert({
+        booking_id: bookingId,
+        vendor_id: vendorId,
+        status: 'assigned',
+        allocation_type: 'manual',
+        assigned_at: new Date().toISOString(),
+        notes,
       });
 
+      // Log activity
+      await supabase.from('booking_activities').insert({
+        booking_id: bookingId,
+        action: 'assigned_to_vendor',
+        details: { vendor_id: vendorId, notes },
+      });
+
+      // Notify vendor
+      const { data: vendor } = await supabase
+        .from('vendors')
+        .select('user_id')
+        .eq('id', vendorId)
+        .single();
+
+      if (vendor) {
+        await supabase.from('notification_queue').insert({
+          user_id: vendor.user_id,
+          notification_type: 'booking_assigned_to_vendor',
+          title: 'New Booking Assigned',
+          body: 'A new booking has been assigned to you by admin',
+          payload: { booking_id: bookingId },
+        });
+      }
+
+      toast({ title: 'Success', description: 'Booking assigned to vendor' });
       await fetchPendingBookings();
       return true;
     } catch (error) {
-      console.error('Error assigning booking:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to assign booking',
-        variant: 'destructive',
-      });
+      console.error('Error assigning to vendor:', error);
+      toast({ title: 'Error', description: 'Failed to assign booking', variant: 'destructive' });
       return false;
     }
   };
 
-  const autoRouteBooking = async (bookingId: string) => {
+  const assignToProvider = async (bookingId: string, providerId: string, notes?: string) => {
     try {
-      // Find the best available provider based on rating and workload
-      const booking = pendingBookings.find(b => b.id === bookingId);
-      if (!booking?.service) {
-        throw new Error('Booking or service not found');
-      }
+      // Super Admin direct assignment bypasses vendor step
+      const { error } = await supabase
+        .from('bookings')
+        .update({ provider_id: providerId, status: 'assigned_to_provider' as any })
+        .eq('id', bookingId);
 
-      // Get providers who offer this service type
-      const serviceType = booking.service.service_type as 'umrah' | 'hajj' | 'ziyarat';
-      const { data: eligibleProviders } = await supabase
-        .from('providers')
-        .select('*, services!inner(*)')
-        .eq('kyc_status', 'approved')
-        .eq('is_active', true)
-        .eq('is_suspended', false)
-        .eq('services.service_type', serviceType)
-        .eq('services.is_active', true)
-        .order('rating', { ascending: false })
-        .limit(1);
+      if (error) throw error;
 
-      if (!eligibleProviders || eligibleProviders.length === 0) {
-        toast({
-          title: 'No Provider Available',
-          description: 'No eligible provider found for this service type',
-          variant: 'destructive',
-        });
-        return false;
-      }
+      await supabase.from('service_allocations').upsert({
+        booking_id: bookingId,
+        provider_id: providerId,
+        status: 'assigned',
+        allocation_type: 'manual',
+        assigned_at: new Date().toISOString(),
+        notes,
+      }, { onConflict: 'booking_id' });
 
-      const bestProvider = eligibleProviders[0];
-      return await assignToProvider(bookingId, bestProvider.id, 'Auto-routed based on rating and availability');
-    } catch (error) {
-      console.error('Error auto-routing booking:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to auto-route booking',
-        variant: 'destructive',
+      await supabase.from('booking_activities').insert({
+        booking_id: bookingId,
+        action: 'assigned_to_provider',
+        details: { provider_id: providerId, notes },
       });
+
+      // Notify provider
+      const { data: provider } = await supabase
+        .from('providers')
+        .select('user_id')
+        .eq('id', providerId)
+        .single();
+
+      if (provider) {
+        await supabase.from('notification_queue').insert({
+          user_id: provider.user_id,
+          notification_type: 'booking_assigned_to_provider',
+          title: 'New Job Assigned',
+          body: 'A new job has been assigned to you',
+          payload: { booking_id: bookingId },
+        });
+      }
+
+      toast({ title: 'Success', description: 'Booking assigned to provider' });
+      await fetchPendingBookings();
+      return true;
+    } catch (error) {
+      console.error('Error assigning booking:', error);
+      toast({ title: 'Error', description: 'Failed to assign booking', variant: 'destructive' });
       return false;
     }
   };
@@ -226,23 +257,15 @@ export function useBookingAllocations() {
 
       await supabase
         .from('bookings')
-        .update({ provider_id: null, status: 'pending' })
+        .update({ provider_id: null, vendor_id: null, status: 'pending' as any })
         .eq('id', bookingId);
 
-      toast({
-        title: 'Success',
-        description: 'Booking unassigned',
-      });
-
+      toast({ title: 'Success', description: 'Booking unassigned' });
       await fetchPendingBookings();
       return true;
     } catch (error) {
       console.error('Error unassigning booking:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to unassign booking',
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: 'Failed to unassign booking', variant: 'destructive' });
       return false;
     }
   };
@@ -250,7 +273,7 @@ export function useBookingAllocations() {
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
-      await Promise.all([fetchPendingBookings(), fetchAvailableProviders()]);
+      await Promise.all([fetchPendingBookings(), fetchAvailableProviders(), fetchAvailableVendors()]);
       setIsLoading(false);
     };
     loadData();
@@ -259,12 +282,14 @@ export function useBookingAllocations() {
   return {
     pendingBookings,
     availableProviders,
+    availableVendors,
     isLoading,
+    isSuperAdmin,
+    assignToVendor,
     assignToProvider,
-    autoRouteBooking,
     unassignBooking,
     refetch: async () => {
-      await Promise.all([fetchPendingBookings(), fetchAvailableProviders()]);
+      await Promise.all([fetchPendingBookings(), fetchAvailableProviders(), fetchAvailableVendors()]);
     },
   };
 }
