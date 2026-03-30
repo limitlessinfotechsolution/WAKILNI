@@ -108,7 +108,7 @@ export async function getBookingById(
 
 export async function getProviderBookings(
   providerId: string,
-  status?: 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled' | 'disputed'
+  status?: 'pending' | 'assigned_to_vendor' | 'assigned_to_provider' | 'accepted' | 'in_progress' | 'completed' | 'cancelled' | 'disputed'
 ): Promise<ApiResponse<BookingWithDetails[]>> {
   try {
     let query = supabase
