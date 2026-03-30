@@ -152,6 +152,7 @@ export type Database = {
           total_amount: number | null
           traveler_id: string | null
           updated_at: string
+          vendor_id: string | null
         }
         Insert: {
           beneficiary_id?: string | null
@@ -168,6 +169,7 @@ export type Database = {
           total_amount?: number | null
           traveler_id?: string | null
           updated_at?: string
+          vendor_id?: string | null
         }
         Update: {
           beneficiary_id?: string | null
@@ -184,6 +186,7 @@ export type Database = {
           total_amount?: number | null
           traveler_id?: string | null
           updated_at?: string
+          vendor_id?: string | null
         }
         Relationships: [
           {
@@ -205,6 +208,13 @@ export type Database = {
             columns: ["service_id"]
             isOneToOne: false
             referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
             referencedColumns: ["id"]
           },
         ]
@@ -1252,6 +1262,7 @@ export type Database = {
           title: string
           title_ar: string | null
           updated_at: string
+          vendor_id: string | null
         }
         Insert: {
           created_at?: string
@@ -1274,6 +1285,7 @@ export type Database = {
           title: string
           title_ar?: string | null
           updated_at?: string
+          vendor_id?: string | null
         }
         Update: {
           created_at?: string
@@ -1296,6 +1308,7 @@ export type Database = {
           title?: string
           title_ar?: string | null
           updated_at?: string
+          vendor_id?: string | null
         }
         Relationships: [
           {
@@ -1303,6 +1316,13 @@ export type Database = {
             columns: ["provider_id"]
             isOneToOne: false
             referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "services_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
             referencedColumns: ["id"]
           },
         ]
@@ -1542,6 +1562,42 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      vendor_providers: {
+        Row: {
+          created_at: string
+          id: string
+          provider_id: string
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          provider_id: string
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          provider_id?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_providers_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_providers_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vendors: {
         Row: {
@@ -1790,6 +1846,8 @@ export type Database = {
         | "completed"
         | "cancelled"
         | "disputed"
+        | "assigned_to_vendor"
+        | "assigned_to_provider"
       kyc_status: "pending" | "under_review" | "approved" | "rejected"
       pilgrim_status:
         | "pending"
@@ -1934,6 +1992,8 @@ export const Constants = {
         "completed",
         "cancelled",
         "disputed",
+        "assigned_to_vendor",
+        "assigned_to_provider",
       ],
       kyc_status: ["pending", "under_review", "approved", "rejected"],
       pilgrim_status: [
