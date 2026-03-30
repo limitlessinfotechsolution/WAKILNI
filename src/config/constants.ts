@@ -60,9 +60,9 @@ export const ROLE_PERMISSIONS = {
     'audit:read',
   ],
   vendor: [
-    'providers:read',
-    'bookings:read', 'bookings:manage',
-    'services:read',
+    'providers:read', 'providers:manage:own',
+    'bookings:read', 'bookings:manage', 'bookings:assign_provider',
+    'services:read', 'services:write', 'services:create',
     'reports:read:own',
   ],
   provider: [
@@ -106,6 +106,8 @@ export const SERVICE_TYPE_LABELS: Record<ServiceType, { en: string; ar: string }
 
 export const BOOKING_STATUSES = {
   PENDING: 'pending',
+  ASSIGNED_TO_VENDOR: 'assigned_to_vendor',
+  ASSIGNED_TO_PROVIDER: 'assigned_to_provider',
   ACCEPTED: 'accepted',
   IN_PROGRESS: 'in_progress',
   COMPLETED: 'completed',
@@ -116,7 +118,9 @@ export const BOOKING_STATUSES = {
 export type BookingStatus = typeof BOOKING_STATUSES[keyof typeof BOOKING_STATUSES];
 
 export const BOOKING_STATUS_LABELS: Record<BookingStatus, { en: string; ar: string }> = {
-  pending: { en: 'Pending', ar: 'قيد الانتظار' },
+  pending: { en: 'Pending Admin Approval', ar: 'بانتظار موافقة الإدارة' },
+  assigned_to_vendor: { en: 'Assigned to Vendor', ar: 'مُعيَّن للوكيل' },
+  assigned_to_provider: { en: 'Assigned to Provider', ar: 'مُعيَّن لمقدم الخدمة' },
   accepted: { en: 'Accepted', ar: 'مقبول' },
   in_progress: { en: 'In Progress', ar: 'جاري التنفيذ' },
   completed: { en: 'Completed', ar: 'مكتمل' },
@@ -126,6 +130,8 @@ export const BOOKING_STATUS_LABELS: Record<BookingStatus, { en: string; ar: stri
 
 export const BOOKING_STATUS_COLORS: Record<BookingStatus, string> = {
   pending: 'bg-warning/20 text-warning border-warning/30',
+  assigned_to_vendor: 'bg-info/20 text-info border-info/30',
+  assigned_to_provider: 'bg-accent/20 text-accent-foreground border-accent/30',
   accepted: 'bg-info/20 text-info border-info/30',
   in_progress: 'bg-primary/20 text-primary border-primary/30',
   completed: 'bg-success/20 text-success border-success/30',
@@ -279,9 +285,12 @@ export const STORAGE_BUCKETS = {
 
 export const NOTIFICATION_TYPES = {
   BOOKING_CREATED: 'booking_created',
+  BOOKING_ASSIGNED_TO_VENDOR: 'booking_assigned_to_vendor',
+  BOOKING_ASSIGNED_TO_PROVIDER: 'booking_assigned_to_provider',
   BOOKING_ACCEPTED: 'booking_accepted',
   BOOKING_COMPLETED: 'booking_completed',
   BOOKING_CANCELLED: 'booking_cancelled',
+  BOOKING_REJECTED_BY_PROVIDER: 'booking_rejected_by_provider',
   KYC_APPROVED: 'kyc_approved',
   KYC_REJECTED: 'kyc_rejected',
   NEW_REVIEW: 'new_review',

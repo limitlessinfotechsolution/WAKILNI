@@ -1,4 +1,4 @@
-import { FileText, Plus, Star, Eye } from 'lucide-react';
+import { FileText, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,9 +13,7 @@ export default function VendorServicesPage() {
 
   const getServiceTypeBadge = (type: string) => {
     const colors: Record<string, string> = {
-      umrah: 'bg-emerald-500',
-      hajj: 'bg-amber-500',
-      ziyarat: 'bg-purple-500',
+      umrah: 'bg-emerald-500', hajj: 'bg-amber-500', ziyarat: 'bg-purple-500',
     };
     return <Badge className={colors[type] || 'bg-gray-500'}>{type.toUpperCase()}</Badge>;
   };
@@ -33,59 +31,28 @@ export default function VendorServicesPage() {
   return (
     <DashboardLayout>
       <div className="p-4 md:p-6 space-y-6">
-        {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
           <div>
             <h1 className={`text-3xl font-bold mb-2 ${isRTL ? 'font-arabic' : ''}`}>
               {isRTL ? 'إدارة الخدمات' : 'Service Management'}
             </h1>
             <p className="text-muted-foreground">
-              {isRTL ? 'إدارة الخدمات المتاحة من خلال مقدمي الخدمات' : 'Manage services available through your providers'}
+              {isRTL ? 'إدارة الخدمات المرتبطة بمؤسستك' : 'Manage services linked to your organization'}
             </p>
           </div>
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <p className="text-3xl font-bold">{services.length}</p>
-              <p className="text-sm text-muted-foreground">{isRTL ? 'إجمالي الخدمات' : 'Total Services'}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <p className="text-3xl font-bold text-green-600">
-                {services.filter(s => s.is_active).length}
-              </p>
-              <p className="text-sm text-muted-foreground">{isRTL ? 'نشطة' : 'Active'}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <p className="text-3xl font-bold text-emerald-600">
-                {services.filter(s => s.service_type === 'umrah').length}
-              </p>
-              <p className="text-sm text-muted-foreground">{isRTL ? 'عمرة' : 'Umrah'}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <p className="text-3xl font-bold text-amber-600">
-                {services.filter(s => s.service_type === 'hajj').length}
-              </p>
-              <p className="text-sm text-muted-foreground">{isRTL ? 'حج' : 'Hajj'}</p>
-            </CardContent>
-          </Card>
+          <Card><CardContent className="pt-6 text-center"><p className="text-3xl font-bold">{services.length}</p><p className="text-sm text-muted-foreground">{isRTL ? 'إجمالي' : 'Total'}</p></CardContent></Card>
+          <Card><CardContent className="pt-6 text-center"><p className="text-3xl font-bold text-green-600">{services.filter(s => s.is_active).length}</p><p className="text-sm text-muted-foreground">{isRTL ? 'نشطة' : 'Active'}</p></CardContent></Card>
+          <Card><CardContent className="pt-6 text-center"><p className="text-3xl font-bold text-emerald-600">{services.filter(s => s.service_type === 'umrah').length}</p><p className="text-sm text-muted-foreground">{isRTL ? 'عمرة' : 'Umrah'}</p></CardContent></Card>
+          <Card><CardContent className="pt-6 text-center"><p className="text-3xl font-bold text-amber-600">{services.filter(s => s.service_type === 'hajj').length}</p><p className="text-sm text-muted-foreground">{isRTL ? 'حج' : 'Hajj'}</p></CardContent></Card>
         </div>
 
-        {/* Services List */}
         <Card>
           <CardHeader>
             <CardTitle>{isRTL ? 'قائمة الخدمات' : 'Services List'}</CardTitle>
-            <CardDescription>
-              {services.length} {isRTL ? 'خدمة متاحة' : 'service(s) available'}
-            </CardDescription>
+            <CardDescription>{services.length} {isRTL ? 'خدمة' : 'service(s)'}</CardDescription>
           </CardHeader>
           <CardContent>
             {services.length === 0 ? (
@@ -93,7 +60,7 @@ export default function VendorServicesPage() {
                 <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-lg font-medium">{isRTL ? 'لا توجد خدمات' : 'No services yet'}</p>
                 <p className="text-muted-foreground mb-4">
-                  {isRTL ? 'الخدمات ستظهر عندما يضيفها مقدمو الخدمات' : 'Services will appear when providers add them'}
+                  {isRTL ? 'الخدمات ستظهر عندما يتم ربطها بمؤسستك' : 'Services will appear when linked to your organization'}
                 </p>
               </div>
             ) : (
@@ -107,28 +74,17 @@ export default function VendorServicesPage() {
                           {service.is_active ? (isRTL ? 'نشط' : 'Active') : (isRTL ? 'معطل' : 'Inactive')}
                         </Badge>
                       </div>
-                      <CardTitle className="text-lg">
-                        {isRTL ? service.title_ar || service.title : service.title}
-                      </CardTitle>
+                      <CardTitle className="text-lg">{isRTL ? service.title_ar || service.title : service.title}</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="flex items-center justify-between mb-4">
                         <div>
-                          <p className="text-2xl font-bold text-primary">
-                            {service.currency || 'SAR'} {service.price}
-                          </p>
-                          {service.duration_days && (
-                            <p className="text-sm text-muted-foreground">
-                              {service.duration_days} {isRTL ? 'يوم' : 'days'}
-                            </p>
-                          )}
+                          <p className="text-2xl font-bold text-primary">{service.currency || 'SAR'} {service.price}</p>
+                          {service.duration_days && <p className="text-sm text-muted-foreground">{service.duration_days} {isRTL ? 'يوم' : 'days'}</p>}
                         </div>
                       </div>
                       <Button variant="outline" size="sm" className="w-full" asChild>
-                        <Link to={`/services/${service.id}`}>
-                          <Eye className="h-4 w-4 me-1" />
-                          {isRTL ? 'عرض التفاصيل' : 'View Details'}
-                        </Link>
+                        <Link to={`/services/${service.id}`}><Eye className="h-4 w-4 me-1" />{isRTL ? 'عرض' : 'View Details'}</Link>
                       </Button>
                     </CardContent>
                   </Card>

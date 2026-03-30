@@ -63,6 +63,8 @@ export type DateRangeInput = z.infer<typeof DateRangeSchema>;
 
 export const BookingStatusSchema = z.enum([
   'pending',
+  'assigned_to_vendor',
+  'assigned_to_provider',
   'accepted',
   'in_progress',
   'completed',

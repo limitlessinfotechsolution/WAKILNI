@@ -108,7 +108,7 @@ export async function getBookingById(
 
 export async function getProviderBookings(
   providerId: string,
-  status?: 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled' | 'disputed'
+  status?: 'pending' | 'assigned_to_vendor' | 'assigned_to_provider' | 'accepted' | 'in_progress' | 'completed' | 'cancelled' | 'disputed'
 ): Promise<ApiResponse<BookingWithDetails[]>> {
   try {
     let query = supabase
@@ -171,7 +171,7 @@ export async function updateBooking(
 
 export async function updateBookingStatus(
   bookingId: string,
-  status: 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled' | 'disputed'
+  status: 'pending' | 'assigned_to_vendor' | 'assigned_to_provider' | 'accepted' | 'in_progress' | 'completed' | 'cancelled' | 'disputed'
 ): Promise<ApiResponse<Booking>> {
   const updates: BookingUpdate = { status };
   
@@ -188,7 +188,7 @@ export async function updateBookingStatus(
 
 export async function getAllBookings(
   filters?: {
-    status?: 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled' | 'disputed';
+    status?: 'pending' | 'assigned_to_vendor' | 'assigned_to_provider' | 'accepted' | 'in_progress' | 'completed' | 'cancelled' | 'disputed';
     serviceType?: string;
     dateFrom?: string;
     dateTo?: string;
