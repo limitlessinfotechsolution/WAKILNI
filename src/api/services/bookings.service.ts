@@ -188,7 +188,7 @@ export async function updateBookingStatus(
 
 export async function getAllBookings(
   filters?: {
-    status?: 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled' | 'disputed';
+    status?: 'pending' | 'assigned_to_vendor' | 'assigned_to_provider' | 'accepted' | 'in_progress' | 'completed' | 'cancelled' | 'disputed';
     serviceType?: string;
     dateFrom?: string;
     dateTo?: string;
