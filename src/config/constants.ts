@@ -60,9 +60,9 @@ export const ROLE_PERMISSIONS = {
     'audit:read',
   ],
   vendor: [
-    'providers:read',
-    'bookings:read', 'bookings:manage',
-    'services:read',
+    'providers:read', 'providers:manage:own',
+    'bookings:read', 'bookings:manage', 'bookings:assign_provider',
+    'services:read', 'services:write', 'services:create',
     'reports:read:own',
   ],
   provider: [
