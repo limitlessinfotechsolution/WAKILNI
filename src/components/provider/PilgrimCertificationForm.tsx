@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -147,30 +148,38 @@ export function PilgrimCertificationForm() {
     }
   };
 
-  // Mock upload handlers (will be connected to real storage later)
-  const handleUploadGovernmentId = async () => {
-    if (!certification) {
-      await createCertification({ government_id_url: 'demo://government-id.jpg' });
-    } else {
-      await updateCertification({ government_id_url: 'demo://government-id.jpg' });
-    }
+  const uploadFile = async (file: File, path: string): Promise<string | null> => {
+    const { data, error } = await supabase.storage
+      .from('kyc-documents')
+      .upload(path, file, { upsert: true });
+    if (error) { console.error('Upload error:', error); return null; }
+    const { data: urlData } = supabase.storage.from('kyc-documents').getPublicUrl(data.path);
+    return urlData.publicUrl;
   };
 
-  const handleUploadPhoto = async () => {
-    if (!certification) {
-      await createCertification({ photo_verification_url: 'demo://photo.jpg' });
-    } else {
-      await updateCertification({ photo_verification_url: 'demo://photo.jpg' });
-    }
+  const handleFileUpload = async (field: 'government_id_url' | 'photo_verification_url' | 'video_oath_url') => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = field === 'video_oath_url' ? 'video/*' : 'image/*';
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file || !provider) return;
+      const ext = file.name.split('.').pop();
+      const path = `${provider.id}/${field}_${Date.now()}.${ext}`;
+      const url = await uploadFile(file, path);
+      if (!url) return;
+      if (!certification) {
+        await createCertification({ [field]: url });
+      } else {
+        await updateCertification({ [field]: url });
+      }
+    };
+    input.click();
   };
 
-  const handleUploadVideoOath = async () => {
-    if (!certification) {
-      await createCertification({ video_oath_url: 'demo://video-oath.mp4' });
-    } else {
-      await updateCertification({ video_oath_url: 'demo://video-oath.mp4' });
-    }
-  };
+  const handleUploadGovernmentId = () => handleFileUpload('government_id_url');
+  const handleUploadPhoto = () => handleFileUpload('photo_verification_url');
+  const handleUploadVideoOath = () => handleFileUpload('video_oath_url');
 
   if (isLoading || providerLoading) {
     return (

@@ -188,15 +188,15 @@ export default function AdminDashboard() {
                 </div>
               </WidgetCard>,
 
-              <WidgetCard key="system" title={isRTL ? 'صحة النظام' : 'System'} icon={<BarChart3 />} color="purple">
+              <WidgetCard key="services" title={isRTL ? 'الخدمات' : 'Services'} icon={<BarChart3 />} color="purple">
                 <div className="space-y-1.5">
                   <div className="flex justify-between text-xs">
-                    <span>{isRTL ? 'وقت التشغيل' : 'Uptime'}</span>
-                    <Badge className="bg-green-500 h-5 text-[10px]">99.9%</Badge>
+                    <span>{isRTL ? 'نشطة' : 'Active'}</span>
+                    <Badge className="bg-green-500 h-5 text-[10px]">{stats.activeServices}</Badge>
                   </div>
                   <div className="flex justify-between text-xs">
-                    <span>{isRTL ? 'معدل الخطأ' : 'Error Rate'}</span>
-                    <span className="font-bold text-green-500">0%</span>
+                    <span>{isRTL ? 'إجمالي التبرعات' : 'Donations'}</span>
+                    <span className="font-bold">{stats.totalDonations}</span>
                   </div>
                 </div>
               </WidgetCard>,

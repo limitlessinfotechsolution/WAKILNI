@@ -22,7 +22,7 @@ import { useDashboardRefresh } from '@/hooks/useDashboardRefresh';
 export default function VendorDashboard() {
   const { t, isRTL } = useLanguage();
   const { profile } = useAuth();
-  const { vendor, stats, isLoading: vendorLoading } = useVendor();
+  const { vendor, stats, isLoading: vendorLoading, vendorProviders, services } = useVendor();
   const { isLoading, refresh, finishLoading } = useDashboardRefresh();
 
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
@@ -125,9 +125,9 @@ export default function VendorDashboard() {
             {[0, 1, 2, 3].map(i => (
               <div key={i} className="animate-fade-in" style={{ animationDelay: `${200 + i * 50}ms` }}>
                 {i === 0 && <SubscriptionWidget plan={vendor?.subscription_plan || 'basic'} daysRemaining={daysRemaining} isActive={daysRemaining > 0} />}
-                {i === 1 && <TeamWidget totalProviders={0} activeProviders={0} pendingVerification={0} />}
+                {i === 1 && <TeamWidget totalProviders={vendorProviders.length} activeProviders={vendorProviders.filter(p => p.is_active).length} pendingVerification={0} />}
                 {i === 2 && <RevenueWidget thisMonth={stats?.totalRevenue || 0} lastMonth={0} growth={0} />}
-                {i === 3 && <ServicesStatsWidget totalServices={0} activeServices={0} avgRating={vendor?.rating || 0} />}
+                {i === 3 && <ServicesStatsWidget totalServices={services.length} activeServices={services.filter(s => s.is_active).length} avgRating={vendor?.rating || 0} />}
               </div>
             ))}
           </div>

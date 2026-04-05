@@ -145,6 +145,14 @@ export function useBookings() {
 
   useEffect(() => {
     fetchBookings();
+
+    if (!user) return;
+    const channel = supabase
+      .channel(`traveler-bookings-${user.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings', filter: `traveler_id=eq.${user.id}` }, () => fetchBookings())
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [user]);
 
   return {

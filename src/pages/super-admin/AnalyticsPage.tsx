@@ -26,34 +26,6 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAdminStats } from '@/hooks/useAdminStats';
 
-// Mock data - in production, this would come from hooks
-const mockBookingTrends = [
-  { date: 'Jan', bookings: 45 },
-  { date: 'Feb', bookings: 52 },
-  { date: 'Mar', bookings: 61 },
-  { date: 'Apr', bookings: 58 },
-  { date: 'May', bookings: 71 },
-  { date: 'Jun', bookings: 85 },
-];
-
-const mockRevenueData = [
-  { name: 'Umrah', value: 45000 },
-  { name: 'Hajj', value: 75000 },
-  { name: 'Ziyarat', value: 15000 },
-];
-
-const mockUserGrowth = [
-  { date: 'Jan', users: 120 },
-  { date: 'Feb', users: 145 },
-  { date: 'Mar', users: 178 },
-  { date: 'Apr', users: 210 },
-  { date: 'May', users: 256 },
-  { date: 'Jun', users: 312 },
-];
-
-const revenueSparkline = [45, 52, 61, 58, 71, 85, 92];
-const usersSparkline = [120, 145, 178, 210, 256, 312, 350];
-const bookingsSparkline = [32, 45, 38, 56, 48, 62, 71];
 
 export default function SuperAdminAnalyticsPage() {
   const { isRTL } = useLanguage();
@@ -205,7 +177,7 @@ export default function SuperAdminAnalyticsPage() {
               <div className="p-2 rounded-lg bg-emerald-500/10">
                 <DollarSign className="h-4 w-4 text-emerald-600" />
               </div>
-              <SparklineChart data={revenueSparkline} width={60} height={24} color="hsl(var(--primary))" />
+              <SparklineChart data={analyticsData.bookingTrends.map(t => t.bookings)} width={60} height={24} color="hsl(var(--primary))" />
             </div>
             <p className="text-xs text-muted-foreground">{isRTL ? 'إجمالي الإيرادات' : 'Total Revenue'}</p>
             <p className="text-xl font-bold">{(stats.donationAmount || 0).toLocaleString()} SAR</p>
@@ -217,7 +189,7 @@ export default function SuperAdminAnalyticsPage() {
               <div className="p-2 rounded-lg bg-blue-500/10">
                 <Users className="h-4 w-4 text-blue-600" />
               </div>
-              <SparklineChart data={usersSparkline} width={60} height={24} color="hsl(147 76% 48%)" />
+              <SparklineChart data={analyticsData.userGrowth.map(u => u.users)} width={60} height={24} color="hsl(147 76% 48%)" />
             </div>
             <p className="text-xs text-muted-foreground">{isRTL ? 'المستخدمون النشطون' : 'Active Users'}</p>
             <p className="text-xl font-bold">{stats.totalTravelers + stats.totalProviders + stats.totalVendors}</p>
@@ -229,7 +201,7 @@ export default function SuperAdminAnalyticsPage() {
               <div className="p-2 rounded-lg bg-amber-500/10">
                 <TrendingUp className="h-4 w-4 text-amber-600" />
               </div>
-              <RingChart value={94.7} size={40} strokeWidth={6} showValue={false} />
+              <RingChart value={analyticsData.completionRate} size={40} strokeWidth={6} showValue={false} />
             </div>
             <p className="text-xs text-muted-foreground">{isRTL ? 'معدل الإتمام' : 'Completion Rate'}</p>
             <p className="text-xl font-bold">{analyticsData.completionRate.toFixed(1)}%</p>
@@ -241,7 +213,7 @@ export default function SuperAdminAnalyticsPage() {
               <div className="p-2 rounded-lg bg-purple-500/10">
                 <Shield className="h-4 w-4 text-purple-600" />
               </div>
-              <SparklineChart data={bookingsSparkline} width={60} height={24} color="hsl(280 67% 60%)" />
+              <SparklineChart data={[analyticsData.kycStatus.pending, analyticsData.kycStatus.underReview, analyticsData.kycStatus.approved]} width={60} height={24} color="hsl(280 67% 60%)" />
             </div>
             <p className="text-xs text-muted-foreground">{isRTL ? 'طلبات التحقق' : 'KYC Requests'}</p>
             <p className="text-xl font-bold">{analyticsData.kycStatus.pending}</p>
@@ -323,17 +295,17 @@ export default function SuperAdminAnalyticsPage() {
           </TabsContent>
 
           <TabsContent value="system" className="space-y-4">
-            {/* System Health */}
+            {/* Platform Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <GlassCard className="p-4">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="p-2 rounded-lg bg-emerald-500/10">
                     <Server className="h-4 w-4 text-emerald-600" />
                   </div>
-                  <span className="text-sm font-medium">{isRTL ? 'وقت التشغيل' : 'Uptime'}</span>
+                  <span className="text-sm font-medium">{isRTL ? 'الخدمات النشطة' : 'Active Services'}</span>
                 </div>
-                <p className="text-3xl font-bold text-emerald-600">99.99%</p>
-                <p className="text-xs text-muted-foreground">{isRTL ? 'خلال 30 يوم' : 'Last 30 days'}</p>
+                <p className="text-3xl font-bold text-emerald-600">{stats.activeServices}</p>
+                <p className="text-xs text-muted-foreground">{isRTL ? 'خدمات متاحة' : 'Available services'}</p>
               </GlassCard>
 
               <GlassCard className="p-4">
@@ -341,10 +313,10 @@ export default function SuperAdminAnalyticsPage() {
                   <div className="p-2 rounded-lg bg-blue-500/10">
                     <Zap className="h-4 w-4 text-blue-600" />
                   </div>
-                  <span className="text-sm font-medium">{isRTL ? 'سرعة الاستجابة' : 'Response Time'}</span>
+                  <span className="text-sm font-medium">{isRTL ? 'إجمالي الحجوزات' : 'Total Bookings'}</span>
                 </div>
-                <p className="text-3xl font-bold">145ms</p>
-                <p className="text-xs text-muted-foreground">{isRTL ? 'متوسط' : 'Average'}</p>
+                <p className="text-3xl font-bold">{stats.totalBookings}</p>
+                <p className="text-xs text-muted-foreground">{isRTL ? 'حجوزات' : 'Bookings'}</p>
               </GlassCard>
 
               <GlassCard className="p-4">
@@ -352,13 +324,13 @@ export default function SuperAdminAnalyticsPage() {
                   <div className="p-2 rounded-lg bg-purple-500/10">
                     <Database className="h-4 w-4 text-purple-600" />
                   </div>
-                  <span className="text-sm font-medium">{isRTL ? 'استخدام قاعدة البيانات' : 'Database Usage'}</span>
+                  <span className="text-sm font-medium">{isRTL ? 'مقدمو الخدمات' : 'Providers'}</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <RingChart value={24} size={50} strokeWidth={6} valueFormatter={(v) => `${v}%`} />
+                  <RingChart value={stats.totalProviders > 0 ? (stats.pendingKyc / stats.totalProviders) * 100 : 0} size={50} strokeWidth={6} valueFormatter={(v) => `${Math.round(v)}%`} />
                   <div>
-                    <p className="text-xl font-bold">2.4 GB</p>
-                    <p className="text-xs text-muted-foreground">{isRTL ? 'من 10 GB' : 'of 10 GB'}</p>
+                    <p className="text-xl font-bold">{stats.totalProviders}</p>
+                    <p className="text-xs text-muted-foreground">{isRTL ? 'قيد التحقق' : 'Pending KYC'}: {stats.pendingKyc}</p>
                   </div>
                 </div>
               </GlassCard>
