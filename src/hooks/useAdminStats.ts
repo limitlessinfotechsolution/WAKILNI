@@ -98,6 +98,17 @@ export function useAdminStats() {
 
   useEffect(() => {
     fetchStats();
+
+    // Realtime subscriptions for auto-refresh
+    const channel = supabase
+      .channel('admin-stats-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => fetchStats())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'providers' }, () => fetchStats())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'services' }, () => fetchStats())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'donations' }, () => fetchStats())
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   return { stats, isLoading, refetch: fetchStats };

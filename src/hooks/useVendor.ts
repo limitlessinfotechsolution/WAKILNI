@@ -360,6 +360,15 @@ export function useVendor() {
   useEffect(() => {
     if (vendor) {
       Promise.all([fetchBookings(), fetchServices(), fetchVendorProviders(), fetchAllProviders()]);
+
+      // Realtime for vendor bookings
+      const channel = supabase
+        .channel(`vendor-bookings-${vendor.id}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings', filter: `vendor_id=eq.${vendor.id}` }, () => fetchBookings())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'services', filter: `vendor_id=eq.${vendor.id}` }, () => fetchServices())
+        .subscribe();
+
+      return () => { supabase.removeChannel(channel); };
     }
   }, [vendor]);
 
